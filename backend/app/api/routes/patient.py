@@ -8,6 +8,7 @@ import enum
 import base64
 import json
 import os
+from app.api.audio_transcriptor import process_audio
 from pathlib import Path
 
 from app.models import Appointment, AppointmentCreate, AppointmentResponse, AppointmentStatus, AppointmentUpdate
@@ -83,7 +84,7 @@ async def websocket_endpoint(
     try:
         uuid_id = uuid.UUID(appointment_id)
         appointment = db.get(Appointment, uuid_id)
-        if not appointment:
+        if not appointment or (appointment.status != AppointmentStatus.PENDING and appointment.status != AppointmentStatus.MISSING_DATA):
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
     except ValueError:
@@ -97,128 +98,24 @@ async def websocket_endpoint(
     await websocket.accept()
     active_connections[appointment_id] = websocket
     
-    try:
         # Enviar mensajes históricos al cliente cuando se conecta
-        for message in appointment_messages[appointment_id]:
-            await websocket.send_json(message)
-        
-        # Bucle principal para recibir mensajes
-        while True:
-            # Recibir mensaje como texto o binario
-            data_type = await websocket.receive_text()
-            
-            if data_type == "text":
-                # Procesar mensaje de texto
-                data = await websocket.receive_json()
-                message = {
-                    "type": "text",
-                    "timestamp": datetime.now().isoformat(),
-                    "content": data.get("content", ""),
-                    "sender": data.get("sender", "patient")
-                }
-                
-                # Guardar el mensaje en el historial
-                appointment_messages[appointment_id].append(message)
-                
-                # Enviar el mensaje de vuelta como confirmación
-                await websocket.send_json(message)
-                
-            elif data_type == "audio":
-                # Recibir datos de audio
-                data = await websocket.receive_json()
-                
-                # Extraer datos de audio en base64
-                audio_data = data.get("audio_data", "")
-                audio_format = data.get("format", "wav")
-                
-                if audio_data:
-                    # Generar nombre de archivo único
-                    filename = f"{appointment_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{audio_format}"
-                    file_path = AUDIO_DIR / filename
-                    
-                    # Decodificar y guardar el archivo de audio
-                    try:
-                        audio_bytes = base64.b64decode(audio_data)
-                        with open(file_path, "wb") as f:
-                            f.write(audio_bytes)
-                        
-                        # Crear mensaje con referencia al archivo de audio
-                        message = {
-                            "type": "audio",
-                            "timestamp": datetime.now().isoformat(),
-                            "filename": filename,
-                            "sender": data.get("sender", "patient")
-                        }
-                        
-                        # Guardar el mensaje en el historial
-                        appointment_messages[appointment_id].append(message)
-                        
-                        # Enviar confirmación
-                        await websocket.send_json({
-                            "type": "audio_received",
-                            "filename": filename,
-                            "timestamp": datetime.now().isoformat()
-                        })
-                    except Exception as e:
-                        # Enviar error si no se pudo procesar el audio
-                        await websocket.send_json({
-                            "type": "error",
-                            "message": f"Error processing audio: {str(e)}"
-                        })
-                else:
-                    await websocket.send_json({
-                        "type": "error",
-                        "message": "No audio data provided"
-                    })
-            
-            elif data_type == "binary":
-                # Alternativa: recibir datos binarios directamente
-                binary_data = await websocket.receive_bytes()
-                
-                # Generar nombre de archivo único
-                filename = f"{appointment_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.bin"
-                file_path = AUDIO_DIR / filename
-                
-                # Guardar el archivo binario
-                with open(file_path, "wb") as f:
-                    f.write(binary_data)
-                
-                # Crear mensaje con referencia al archivo
-                message = {
-                    "type": "binary",
-                    "timestamp": datetime.now().isoformat(),
-                    "filename": filename,
-                    "sender": "patient"  # Asumimos que es del paciente
-                }
-                
-                # Guardar el mensaje en el historial
-                appointment_messages[appointment_id].append(message)
-                
-                # Enviar confirmación
-                await websocket.send_json({
-                    "type": "binary_received",
-                    "filename": filename,
-                    "timestamp": datetime.now().isoformat()
-                })
-            
-            else:
-                # Tipo de mensaje no reconocido
-                await websocket.send_json({
-                    "type": "error",
-                    "message": f"Unsupported message type: {data_type}"
-                })
-            
-    except WebSocketDisconnect:
-        # Manejar la desconexión del cliente
-        if appointment_id in active_connections:
-            del active_connections[appointment_id]
-    except Exception as e:
-        # Manejar otros errores
-        if appointment_id in active_connections:
-            del active_connections[appointment_id]
-        # En un entorno de producción, deberías registrar este error
-        print(f"Error in WebSocket connection: {str(e)}")
-
+    for message in appointment_messages[appointment_id]:
+        await websocket.send_json(message)
+    
+    while True:
+        message = await websocket.receive()  # Recibe el mensaje como dict
+        print(message)
+        if "text" in message:
+              # Check if the appointment's information needs to be updated or appended
+              if appointment.status == AppointmentStatus.MISSING_DATA:
+                  appointment.information = (appointment.information or "") + "\n" + message["text"]
+              elif appointment.status == AppointmentStatus.PENDING:
+                  appointment.information = message["text"]
+              db.commit()
+        elif "bytes" in message:
+            process_audio(message["bytes"])
+        else:
+            print(f"Incorrect message")  # bytes
 
 # Endpoint para acceder a los archivos de audio
 @router.get("/audio/{filename}")
