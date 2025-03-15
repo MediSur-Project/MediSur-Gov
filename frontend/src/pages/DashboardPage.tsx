@@ -297,7 +297,7 @@ const DashboardPage: React.FC = () => {
           </Paper>
         </Grid>
         
-        <Grid item xs={12} sm={6} md={3}>
+        {/* <Grid item xs={12} sm={6} md={3}>
           <Paper
             elevation={3}
             sx={{
@@ -319,7 +319,7 @@ const DashboardPage: React.FC = () => {
               {stats.medicalRecordsCount}
             </Typography>
           </Paper>
-        </Grid>
+        </Grid> */}
       </Grid>
       
       {/* Hospital Selection */}

@@ -94,7 +94,7 @@ def init_items(session: Session, users: list[User], count_per_user: int = 3) -> 
             session.add(item)
     session.commit()
 
-def init_appointments(session: Session, count: int = 100) -> list[Appointment]:
+def init_appointments(session: Session, count: int = 500) -> list[Appointment]:
     available_hospitals = session.exec(select(Hospital)).all()    
     appointments = []
     for _ in range(count):
@@ -106,10 +106,11 @@ def init_appointments(session: Session, count: int = 100) -> list[Appointment]:
             additional_data={"notes": faker.sentence()},
             prority=random.choice(severity),
             medical_specialty=random.choice(especialidad),
-            request_start_time=datetime.now() - timedelta(days=random.randint(1, 300)),
-            appointment_creation_time=datetime.now() - timedelta(days=random.randint(0, 299)),
+            request_start_time=datetime.now() - timedelta(days=random.randint(1, 100)),
+            appointment_creation_time=datetime.now() - timedelta(days=random.randint(0, 100)),
             pending_time=None,
             assigned_time=None,
+            contagious=random.choice([True, False]),
             scheduled_time=datetime.now() + timedelta(days=random.randint(1, 50)),
         )
         session.add(appointment)
