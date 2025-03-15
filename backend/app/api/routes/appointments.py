@@ -1,5 +1,6 @@
 from fastapi import APIRouter, WebSocket, Depends, HTTPException, status
 from sqlmodel import Session
+from requests import post
 from typing import Dict, List
 import uuid
 from datetime import datetime
@@ -12,7 +13,7 @@ from app.api.deps import get_db
 from app.api.services.user_answer import ask_more_questions, MedicalCaseResult
 import json
 from sqlmodel import Session, select
-    
+from app.models import Hospital
     
 router = APIRouter(prefix="/appointments", tags=["appointments"])
 
@@ -198,9 +199,39 @@ async def websocket_endpoint(
 
             # Close the WebSocket connection
             await websocket.close()
-            #notify_hospital(appointment_id, result.assigned_hospital, result.triage.urgency, result.triage.specialty, result.raw_input.user_id, message_from_user)
+            notify_hospital(db, appointment_id, result.assigned_hospital, result.triage.urgency, result.triage.specialty, result.raw_input.user_id, message_from_user)
             break
 
-def notify_hospital(appointment_id: str, hospital: str, urgency: str, specialty: str, user_id: str, message: str):
+def notify_hospital(db, appointment_id: str, hospital: str, urgency: str, specialty: str, user_id: str, message: str):
+    hospital = db.get(Hospital, hospital)
+    if hospital is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Hospital not found"
+        )
+    if hospital.uri is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Hospital URI not found"
+        )
+    
+    appointment_data = {
+    "patient_id": user_id,
+    "specialty": specialty,
+    "appointment_type": "consulta",
+    "urgency": urgency,
+    "reason": message,
+    "notes": f"Test de sistema de citas (Urgencia: {urgency}, Tipo: {specialty})"
+    }
+
+    # Realizar la solicitud
+    print(f"DNI paciente: {appointment_data['patient_id']}")
+    print(f"Razón: {appointment_data['reason']}")
+
+    response = requests.post(
+        f"{hospital.uri}/specialty-appointments/",
+        json=appointment_data
+    )
+
 
     pass
