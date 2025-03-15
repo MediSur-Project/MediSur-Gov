@@ -104,11 +104,12 @@ def triage_patient(context: StructuredUserInput) -> TriageResult:
     Determine:
     - The urgency of the case (Low, Moderate, High, Emergency)
     - The best medical specialty to handle the case.
-    
+    - Whether the patient is contagious (e.g. covid, flu, etc.). You MUST answer this question with a boolean value. If unsure, answer False.
+
     Return JSON with keys:
     - urgency (string)
     - specialty (string)
-    - contagious (boolean) Whether the patient is contagious (e.g. covid, flu, etc.)
+    - contagious (boolean)
     The options for specialty are:
     {', '.join(especialidad)}
     """
