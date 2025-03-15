@@ -4,11 +4,13 @@ import {
   Paper,
   Box,
   Typography,
-  Card,
-  CardContent,
-  CardHeader,
-  CircularProgress,
   Divider,
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
 } from '@mui/material';
 import {
   LocalHospital as HospitalIcon,
@@ -18,69 +20,162 @@ import {
 } from '@mui/icons-material';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
 import { Pie, Bar } from 'react-chartjs-2';
-import { AppointmentStatus } from '../types';
+import { AppointmentStatus, Hospital as HospitalType, Appointment } from '../types';
+
+// Services
+import { getHospitals } from '../services/hospitalService';
+import { getPatients } from '../services/patientService';
+import { getAppointments } from '../services/appointmentService';
 
 // Register ChartJS components
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
-// Mock data for stats
-const mockStats = {
-  hospitalsCount: 8,
-  patientsCount: 245,
-  appointmentsCount: 120,
-  medicalRecordsCount: 352,
-};
-
-// Mock data for appointment status distribution
-const appointmentStatusData = {
-  labels: ['Missing Data', 'Pending', 'Assigned', 'Finished'],
-  datasets: [
-    {
-      label: 'Appointments by Status',
-      data: [12, 35, 45, 28],
-      backgroundColor: [
-        'rgba(255, 99, 132, 0.6)',
-        'rgba(54, 162, 235, 0.6)',
-        'rgba(255, 206, 86, 0.6)',
-        'rgba(75, 192, 192, 0.6)',
-      ],
-      borderColor: [
-        'rgba(255, 99, 132, 1)',
-        'rgba(54, 162, 235, 1)',
-        'rgba(255, 206, 86, 1)',
-        'rgba(75, 192, 192, 1)',
-      ],
-      borderWidth: 1,
-    },
-  ],
-};
-
-// Mock data for monthly appointments
-const monthlyAppointmentsData = {
-  labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-  datasets: [
-    {
-      label: 'Appointments',
-      data: [15, 22, 18, 25, 30, 42, 38, 35, 40, 45, 35, 28],
-      backgroundColor: 'rgba(54, 162, 235, 0.6)',
-      borderColor: 'rgba(54, 162, 235, 1)',
-      borderWidth: 1,
-    },
-  ],
+const statusColors = {
+  [AppointmentStatus.MISSING_DATA]: {
+    background: 'rgba(255, 99, 132, 0.6)',
+    border: 'rgba(255, 99, 132, 1)',
+  },
+  [AppointmentStatus.PENDING]: {
+    background: 'rgba(54, 162, 235, 0.6)',
+    border: 'rgba(54, 162, 235, 1)',
+  },
+  [AppointmentStatus.ASSIGNED]: {
+    background: 'rgba(255, 206, 86, 0.6)',
+    border: 'rgba(255, 206, 86, 1)',
+  },
+  [AppointmentStatus.FINISHED]: {
+    background: 'rgba(75, 192, 192, 0.6)',
+    border: 'rgba(75, 192, 192, 1)',
+  },
 };
 
 const DashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState(mockStats);
+  const [stats, setStats] = useState({
+    hospitalsCount: 0,
+    patientsCount: 0,
+    appointmentsCount: 0,
+    medicalRecordsCount: 0,
+  });
+  const [hospitals, setHospitals] = useState<HospitalType[]>([]);
+  const [selectedHospital, setSelectedHospital] = useState<string>('all');
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointmentStatusData, setAppointmentStatusData] = useState({
+    labels: Object.values(AppointmentStatus).map(status => 
+      status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')),
+    datasets: [{
+      label: 'Appointments by Status',
+      data: [0, 0, 0, 0],
+      backgroundColor: Object.values(statusColors).map(color => color.background),
+      borderColor: Object.values(statusColors).map(color => color.border),
+      borderWidth: 1,
+    }],
+  });
+  const [monthlyAppointmentsData, setMonthlyAppointmentsData] = useState({
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    datasets: [{
+      label: 'Appointments',
+      data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      backgroundColor: 'rgba(54, 162, 235, 0.6)',
+      borderColor: 'rgba(54, 162, 235, 1)',
+      borderWidth: 1,
+    }],
+  });
 
+  // Fetch data on component mount
   useEffect(() => {
-    // Simulate fetching data
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
+    fetchData();
   }, []);
+
+  // Update charts when selectedHospital changes
+  useEffect(() => {
+    if (appointments.length > 0) {
+      updateCharts();
+    }
+  }, [selectedHospital, appointments]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch hospitals
+      const hospitalsResponse = await getHospitals(0, 100);
+      setHospitals(hospitalsResponse.data);
+      
+      // Fetch patients
+      const patientsResponse = await getPatients(0, 100);
+      
+      // Fetch appointments
+      const appointmentsResponse = await getAppointments(0, 500);
+      setAppointments(appointmentsResponse.data);
+      
+      // Set stats
+      setStats({
+        hospitalsCount: hospitalsResponse.data.length,
+        patientsCount: patientsResponse.data.length,
+        appointmentsCount: appointmentsResponse.data.length,
+        medicalRecordsCount: 0, // No direct API for medical records count
+      });
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      setLoading(false);
+    }
+  };
+
+  const updateCharts = () => {
+    // Filter appointments by selected hospital if needed
+    const filteredAppointments = selectedHospital === 'all' 
+      ? appointments 
+      : appointments.filter(app => app.hospital_assigned === selectedHospital);
+    
+    // Update appointment status chart
+    const statusCounts = {
+      [AppointmentStatus.MISSING_DATA]: 0,
+      [AppointmentStatus.PENDING]: 0,
+      [AppointmentStatus.ASSIGNED]: 0,
+      [AppointmentStatus.FINISHED]: 0,
+    };
+    
+    filteredAppointments.forEach(appointment => {
+      statusCounts[appointment.status]++;
+    });
+    
+    setAppointmentStatusData({
+      labels: Object.values(AppointmentStatus).map(status => 
+        status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')),
+      datasets: [{
+        label: 'Appointments by Status',
+        data: Object.values(statusCounts),
+        backgroundColor: Object.values(statusColors).map(color => color.background),
+        borderColor: Object.values(statusColors).map(color => color.border),
+        borderWidth: 1,
+      }],
+    });
+    
+    // Update monthly appointments chart
+    const monthlyCounts = Array(12).fill(0);
+    
+    filteredAppointments.forEach(appointment => {
+      // Use request_start_time to determine the month
+      if (appointment.request_start_time) {
+        const month = new Date(appointment.request_start_time).getMonth();
+        monthlyCounts[month]++;
+      }
+    });
+    
+    setMonthlyAppointmentsData({
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      datasets: [{
+        label: 'Appointments by Month',
+        data: monthlyCounts,
+        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1,
+      }],
+    });
+  };
 
   // Custom options for bar chart
   const barOptions = {
@@ -108,6 +203,10 @@ const DashboardPage: React.FC = () => {
         text: 'Appointment Status Distribution',
       },
     },
+  };
+
+  const handleHospitalChange = (event: SelectChangeEvent) => {
+    setSelectedHospital(event.target.value as string);
   };
 
   if (loading) {
@@ -223,6 +322,29 @@ const DashboardPage: React.FC = () => {
         </Grid>
       </Grid>
       
+      {/* Hospital Selection */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12}>
+          <Paper elevation={3} sx={{ p: 2 }}>
+            <FormControl fullWidth>
+              <InputLabel id="hospital-select-label">Select Hospital</InputLabel>
+              <Select
+                labelId="hospital-select-label"
+                id="hospital-select"
+                value={selectedHospital}
+                label="Select Hospital"
+                onChange={handleHospitalChange}
+              >
+                <MenuItem value="all">All Hospitals</MenuItem>
+                {hospitals.map((hospital) => (
+                  <MenuItem key={hospital.id} value={hospital.id}>{hospital.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Paper>
+        </Grid>
+      </Grid>
+      
       {/* Charts */}
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
@@ -250,34 +372,6 @@ const DashboardPage: React.FC = () => {
             }}
           >
             <Bar data={monthlyAppointmentsData} options={barOptions} />
-          </Paper>
-        </Grid>
-      </Grid>
-      
-      {/* Recent Activity */}
-      <Grid container spacing={3} sx={{ mt: 2 }}>
-        <Grid item xs={12}>
-          <Paper elevation={3} sx={{ p: 2 }}>
-            <Typography variant="h6" component="div" gutterBottom>
-              Recent Activity
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            <Box sx={{ height: 200, overflow: 'auto' }}>
-              {/* Mock activity items */}
-              {[1, 2, 3, 4, 5].map((item) => (
-                <Box key={item} sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}
-                  </Typography>
-                  <Typography variant="body1">
-                    {item % 2 === 0
-                      ? 'New appointment created for Patient #1234'
-                      : 'Medical record updated for Patient #5678'}
-                  </Typography>
-                  <Divider sx={{ mt: 1 }} />
-                </Box>
-              ))}
-            </Box>
           </Paper>
         </Grid>
       </Grid>
