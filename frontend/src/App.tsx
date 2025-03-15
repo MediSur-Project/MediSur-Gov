@@ -83,10 +83,6 @@ function App() {
               
               {/* Patient routes */}
               <Route path="patients" element={<PatientsPage />} />
-              <Route path="patients/:patientId/medical-records" element={<MedicalRecordsPage />} />
-              
-              {/* Medical Records routes */}
-              <Route path="medical-records" element={<MedicalRecordsPage />} />
               
               {/* Redirect to dashboard if the route doesn't exist */}
               <Route path="*" element={<Navigate to="/dashboard" />} />

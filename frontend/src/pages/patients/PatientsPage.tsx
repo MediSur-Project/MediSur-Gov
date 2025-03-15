@@ -299,20 +299,6 @@ const PatientsPage: React.FC = () => {
                     </TableCell>
                     <TableCell align="right">
                       <IconButton
-                        aria-label="view medical records"
-                        color="primary"
-                        onClick={() => handleViewMedicalRecords(patient.id)}
-                      >
-                        <HealthIcon />
-                      </IconButton>
-                      <IconButton
-                        aria-label="view prescriptions"
-                        color="info"
-                        onClick={() => handleViewPrescriptions(patient.id)}
-                      >
-                        <MedicationIcon />
-                      </IconButton>
-                      <IconButton
                         aria-label="edit"
                         color="secondary"
                         onClick={() => handleOpenEditDialog(patient)}

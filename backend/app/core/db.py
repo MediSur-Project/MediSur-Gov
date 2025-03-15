@@ -92,22 +92,23 @@ def init_items(session: Session, users: list[User], count_per_user: int = 3) -> 
             session.add(item)
     session.commit()
 
-def init_appointments(session: Session, count: int = 5) -> list[Appointment]:
+def init_appointments(session: Session, count: int = 20) -> list[Appointment]:
+    available_hospitals = session.exec(select(Hospital)).all()    
     appointments = []
     for _ in range(count):
         appointment = Appointment(
             id=uuid.uuid4(),
             patient_id=faker.uuid4(),
             status=random.choice(list(AppointmentStatus)),
-            hospital_assigned=faker.company(),
+            hospital_assigned=random.choice(available_hospitals).id,
             additional_data={"notes": faker.sentence()},
             prority=random.choice(["low", "medium", "high"]),
             medical_specialty=random.choice(["cardiology", "neurology", "oncology"]),
-            request_start_time=datetime.now() - timedelta(days=random.randint(1, 10)),
-            appointment_creation_time=datetime.now() - timedelta(days=random.randint(0, 9)),
+            request_start_time=datetime.now() - timedelta(days=random.randint(1, 100)),
+            appointment_creation_time=datetime.now() - timedelta(days=random.randint(0, 99)),
             pending_time=None,
             assigned_time=None,
-            scheduled_time=datetime.now() + timedelta(days=random.randint(1, 5)),
+            scheduled_time=datetime.now() + timedelta(days=random.randint(1, 50)),
         )
         session.add(appointment)
         session.commit()  # Commit so appointment.id is available
