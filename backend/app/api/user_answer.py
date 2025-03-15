@@ -186,7 +186,8 @@ if __name__ == "__main__":
     raw_data = RawUserInput(user_id="12345", chat=["I've had a cough and fever for 4 days, it's getting worse."])
     while extra_questions:
         result = process_medical_case(raw_data)
-        if result.extra_questions is not None and len(result.extra_questions.further_questions) > 0:
+        extra_questions = result.extra_questions is not None and len(result.extra_questions.further_questions) > 0
+        if extra_questions:
             print("Additional questions needed:")
             for question in result.extra_questions.further_questions:
                 print(question)
