@@ -115,6 +115,26 @@ def delete_patient_api(
     patient = delete_patient(session=db, patient_id=patient_id)
     return patient
 
+@router.get("/by-national-id/{national_id}/medical-records/", response_model=MedicalRecordsPublic)
+def read_medical_records_by_national_id(
+    *,
+    national_id: str,
+    skip: int = 0, 
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    # current_user: User = Depends(get_current_user),
+) -> Any:
+    """
+    Retrieve medical records for a patient.
+    """
+    patient = get_patient_by_national_id(session=db, national_id=national_id)
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    
+    records = get_medical_records(session=db, patient_id=patient.id, skip=skip, limit=limit)
+    return MedicalRecordsPublic(data=records, count=len(records))
+
+
 # Medical Record endpoints
 @router.get("/{patient_id}/medical-records/", response_model=MedicalRecordsPublic)
 def read_medical_records(
