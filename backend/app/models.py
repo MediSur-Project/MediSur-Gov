@@ -1,7 +1,10 @@
 import uuid
+import enum
+from datetime import datetime
 
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
+from sqlalchemy import Column, JSON
 
 
 # Shared properties
@@ -112,3 +115,57 @@ class TokenPayload(SQLModel):
 class NewPassword(SQLModel):
     token: str
     new_password: str = Field(min_length=8, max_length=40)
+
+
+# Appointment status enum
+class AppointmentStatus(str, enum.Enum):
+    MISSING_DATA = "missing_data"
+    PENDING = "pending"
+    ASSIGNED = "assigned"
+    FINISHED = "finished"
+
+
+# Appointment model
+class AppointmentBase(SQLModel):
+    patient_id: str
+    status: AppointmentStatus = Field(default=AppointmentStatus.MISSING_DATA)
+    hospital_assigned: str | None = Field(default=None, max_length=255)
+    information: str | None = Field(default=None)
+    additional_data: dict | None = Field(default=None, sa_column=Column(JSON))
+    
+    # Timestamps
+    request_start_time: datetime = Field(default_factory=datetime.now)
+    appointment_creation_time: datetime | None = Field(default=None)
+    pending_time: datetime | None = Field(default=None)
+    assigned_time: datetime | None = Field(default=None)
+    scheduled_time: datetime | None = Field(default=None)
+
+
+# Database model
+class Appointment(AppointmentBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+
+
+# Properties to receive on appointment creation
+class AppointmentCreate(SQLModel):
+    patient_id: str
+
+
+# Properties to return via API
+class AppointmentResponse(AppointmentBase):
+    id: uuid.UUID
+
+
+# Properties to update appointment
+class AppointmentUpdate(SQLModel):
+    status: AppointmentStatus | None = Field(default=None)
+    hospital_assigned: str | None = Field(default=None)
+    information: str | None = Field(default=None)
+    additional_data: dict | None = Field(default=None)
+    scheduled_time: datetime | None = Field(default=None)
+
+
+# List of appointments
+class AppointmentsPublic(SQLModel):
+    data: list[AppointmentResponse]
+    count: int
