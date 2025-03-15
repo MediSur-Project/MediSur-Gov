@@ -22,7 +22,8 @@ dependencies = [
     "sentry-sdk[fastapi]<2.0.0,>=1.40.6",
     "pyjwt<3.0.0,>=2.8.0",
     "openai",
-    "requests"
+    "requests",
+    "paho-mqtt"
 ]
 
 [tool.uv]
