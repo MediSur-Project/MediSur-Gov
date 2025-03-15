@@ -158,7 +158,6 @@ async def websocket_endpoint(
                     "text": f"Error processing audio: {str(e)}",
                     "timestamp": datetime.now().isoformat()
                 })
-            result: MedicalCaseResult = ask_more_questions(db, appointment_id)
         elif "text" in message:
             message_from_user = message["text"]
         else:
