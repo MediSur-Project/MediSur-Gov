@@ -1,6 +1,6 @@
 from fastapi import APIRouter, WebSocket, Depends, HTTPException, status
 from sqlmodel import Session
-from requests import post
+import requests
 from typing import Dict, List
 import uuid
 from datetime import datetime
@@ -80,6 +80,15 @@ async def update_appointment(
     db.refresh(appointment)
     
     return appointment
+
+@router.get("/appointments/patient/{patient_id}", response_model=AppointmentsPublic)
+async def get_appointments_by_patient(
+    patient_id: uuid.UUID,
+    db: Session = Depends(get_db)
+):
+    statement = select(Appointment).where(Appointment.patient_id == patient_id)
+    appointments = db.exec(statement).all()
+    return AppointmentsPublic(data=appointments, count=len(appointments))
 
 @router.get("/all", response_model=AppointmentsPublic)
 async def get_appointments(
@@ -203,7 +212,8 @@ async def websocket_endpoint(
             break
 
 def notify_hospital(db, appointment_id: str, hospital: str, urgency: str, specialty: str, user_id: str, message: str):
-    hospital = db.get(Hospital, hospital)
+    statement = select(Hospital).where(Hospital.name == hospital)
+    hospital = db.exec(statement).first()
     if hospital is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -221,17 +231,17 @@ def notify_hospital(db, appointment_id: str, hospital: str, urgency: str, specia
     "appointment_type": "consulta",
     "urgency": urgency,
     "reason": message,
-    "notes": f"Test de sistema de citas (Urgencia: {urgency}, Tipo: {specialty})"
+    "notes": f"Asignado desde MediSur Central - (Urgencia: {urgency}, Tipo: {specialty})"
     }
 
     # Realizar la solicitud
     print(f"DNI paciente: {appointment_data['patient_id']}")
     print(f"Razón: {appointment_data['reason']}")
-
+    print(f"URI: {hospital.uri}")
     response = requests.post(
         f"{hospital.uri}/specialty-appointments/",
         json=appointment_data
     )
-
+    print(f"Response: {response.json()}")
 
     pass
