@@ -166,7 +166,10 @@ async def websocket_endpoint(
                 audio_data = message["bytes"]
                 audio_path = save_audio_file(appointment_id, audio_data)               
                 message_from_user = process_audio(api_key=settings.OPENAI_API_KEY, audio_path=str(audio_path))
-                
+                await websocket.send_json({
+                "type": "transcription",
+                "value": message_from_user
+            })
             except Exception as e:
                 print(f"Error processing audio: {str(e)}")
                 await websocket.send_json({
@@ -229,12 +232,12 @@ def notify_hospital(db, appointment_id: str, hospital: str, urgency: str, specia
         )
     
     appointment_data = {
-    "patient_id": user_id,
-    "specialty": specialty,
-    "appointment_type": "consulta",
-    "urgency": urgency,
-    "reason": message,
-    "notes": f"Asignado desde MediSur Central - (Urgencia: {urgency}, Tipo: {specialty})"
+        "patient_id": user_id,
+        "specialty": specialty,
+        "appointment_type": "consulta",
+        "urgency": urgency,
+        "reason": message,
+        "notes": f"Asignado desde MediSur Central - (Urgencia: {urgency}, Tipo: {specialty})"
     }
 
     # Realizar la solicitud
