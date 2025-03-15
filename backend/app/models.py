@@ -199,3 +199,10 @@ class AppointmentUpdate(SQLModel):
 class AppointmentsPublic(SQLModel):
     data: list[AppointmentResponse]
     count: int
+
+class HospitalBase(SQLModel):
+    name: str
+    address: str
+    phone_number: str
+    email: EmailStr
+    contact_person: str

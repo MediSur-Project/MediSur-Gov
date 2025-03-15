@@ -2,7 +2,7 @@ from sqlmodel import Session, create_engine, select, SQLModel, inspect
 
 from app import crud
 from app.core.config import settings
-from app.models import User, UserCreate
+from app.models import User, UserCreate, HospitalBase
 
 engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
@@ -17,6 +17,34 @@ def create_db_and_tables():
     # This works because the models are already imported and registered from app.models
     SQLModel.metadata.create_all(engine)
     
+
+def init_hospitals(session: Session) -> None:
+    hospitals = [
+        {
+            "name": "Hospital General",
+            "address": "Calle 1 #123",
+            "phone_number": "1234567890",
+            "email": "example@example.com",
+            "contact_person": "Dr. Juan Perez",
+        },
+        {
+            "name": "Hospital Especializado",
+            "address": "Calle 2 #456",
+            "phone_number": "0987654321",
+            "email": "example@example.com",
+            "contact_person": "Dr. Maria Lopez",
+        },
+    ]
+    for hospital in hospitals:
+        hospital_in = HospitalBase(**hospital)
+        # Check if hospital already exists
+        existing_hospital = session.exec(
+            select(HospitalBase).where(HospitalBase.name == hospital_in.name)
+        ).first()
+        if not existing_hospital:
+            session.add(hospital_in)
+    session.commit()
+        
 
 def init_db(session: Session) -> None:
     # Tables should be created with Alembic migrations
@@ -35,3 +63,5 @@ def init_db(session: Session) -> None:
             is_superuser=True,
         )
         user = crud.create_user(session=session, user_create=user_in)
+    # Init hospital data
+    init_hospitals(session)
