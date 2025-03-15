@@ -14,38 +14,7 @@ from sqlalchemy.orm import Session
 OPENAI_API_KEY = settings.OPENAI_API_KEY
 PERPLEXITY_API_KEY = settings.PERPLEXITY_API_KEY
 client = OpenAI(api_key=OPENAI_API_KEY)
-especialidad = [
-    "Anestesiología",
-    "Cardiología",
-    "Dermatología",
-    "Cirugía General",
-    "Medicina de Emergencias",
-    "Endocrinología",
-    "Medicina Familiar",
-    "Gastroenterología",
-    "Geriatría",
-    "Hematología",
-    "Enfermedades Infecciosas",
-    "Medicina Interna",
-    "Nefrología",
-    "Neumología",
-    "Neurología",
-    "Obstetricia y Ginecología",
-    "Oncología",
-    "Oftalmología",
-    "Otorrinolaringología",
-    "Ortopedia",
-    "Patología",
-    "Pediatría",
-    "Psiquiatría",
-    "Radiología",
-    "Reumatología",
-    "Urología",
-    "Medicina Nuclear",
-    "Cirugía Plástica",
-    "Cirugía Cardiovascular",
-    "Neurocirugía"
-]
+
 
 # --- SCHEMA DEFINITIONS --- #
 
@@ -74,6 +43,7 @@ class TriageResult(BaseModel):
     """Output of the triage system, determining urgency and specialty"""
     urgency: str  # "Low", "Moderate", "High", "Emergency"
     specialty: str  # Suggested medical specialty
+    contagious: bool = False # Whether the patient is contagious
 
 
 class DoctorSuggestions(BaseModel):
@@ -137,6 +107,7 @@ def triage_patient(context: StructuredUserInput) -> TriageResult:
     Return JSON with keys:
     - urgency (string)
     - specialty (string)
+    - contagious (boolean) Whether the patient is contagious (e.g. covid, flu, etc.)
     The options for specialty are:
     {', '.join(especialidad)}
     """
