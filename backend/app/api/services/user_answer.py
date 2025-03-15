@@ -8,6 +8,7 @@ from openai import OpenAI
 from app.core.config import settings
 import os
 from app.models import AppointmentInfo
+from app.models import especialidad, severity
 from sqlmodel import select, func
 from sqlalchemy.orm import Session
 # Constants (Replace with real API keys)
@@ -28,7 +29,7 @@ class StructuredUserInput(BaseModel):
     """Structured form of user input after processing by an LLM"""
     symptoms: List[str] = Field(..., description="List of detected symptoms")
     duration: Optional[str] = Field(None, description="Parsed duration of symptoms")
-    severity: Optional[str] = Field(None, description="Severity level (e.g., 'mild', 'moderate', 'severe')")
+    severity: Optional[str] = Field(None, description=f"Severity level (e.g., {', '.join(severity)})")
     medical_history: Optional[List[str]] = Field(None, description="User's medical history, if detected")
     age: Optional[int] = Field(None, description="User's age, if detected")
     gender: Optional[str] = Field(None, description="User's gender, if detected")
@@ -73,7 +74,7 @@ def parse_user_input(raw_input: RawUserInput) -> StructuredUserInput:
     Return a JSON object with keys:
     - symptoms (list of symptoms)
     - duration (text-based duration e.g., "3 days")
-    - severity (mild, moderate, severe)
+    - severity ({', '.join(severity)})
     - medical_history (list of past conditions, if mentioned)
     - age (integer, if mentioned)
     - gender (male, female, or unknown, if mentioned)

@@ -38,6 +38,12 @@ especialidad = [
     "Cirugía Cardiovascular",
     "Neurocirugía"
 ]
+
+severity = [
+    'mild',
+    'moderate',
+    'severe'
+]
 # Shared properties
 class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True, max_length=255)
@@ -164,6 +170,7 @@ class AppointmentBase(SQLModel):
     additional_data: dict | None = Field(default=None, sa_column=Column(JSON))
     prority: str | None = Field(default=None, max_length=255)
     medical_specialty: str | None = Field(default=None, max_length=255)
+    contagious: bool = Field(default=False)
     
     # Timestamps
     request_start_time: datetime = Field(default_factory=datetime.now)

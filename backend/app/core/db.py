@@ -18,7 +18,8 @@ from app.models import (
     Patient,
     MedicalRecord,
     Prescription,
-    especialidad
+    especialidad,
+    severity
 )
 
 faker = Faker()
@@ -93,7 +94,7 @@ def init_items(session: Session, users: list[User], count_per_user: int = 3) -> 
             session.add(item)
     session.commit()
 
-def init_appointments(session: Session, count: int = 20) -> list[Appointment]:
+def init_appointments(session: Session, count: int = 100) -> list[Appointment]:
     available_hospitals = session.exec(select(Hospital)).all()    
     appointments = []
     for _ in range(count):
@@ -103,10 +104,10 @@ def init_appointments(session: Session, count: int = 20) -> list[Appointment]:
             status=random.choice(list(AppointmentStatus)),
             hospital_assigned=random.choice(available_hospitals).id,
             additional_data={"notes": faker.sentence()},
-            prority=random.choice(["low", "medium", "high"]),
+            prority=random.choice(severity),
             medical_specialty=random.choice(especialidad),
-            request_start_time=datetime.now() - timedelta(days=random.randint(1, 100)),
-            appointment_creation_time=datetime.now() - timedelta(days=random.randint(0, 99)),
+            request_start_time=datetime.now() - timedelta(days=random.randint(1, 300)),
+            appointment_creation_time=datetime.now() - timedelta(days=random.randint(0, 299)),
             pending_time=None,
             assigned_time=None,
             scheduled_time=datetime.now() + timedelta(days=random.randint(1, 50)),
