@@ -121,7 +121,7 @@ async def websocket_endpoint(
                 AUDIO_DIR.mkdir(exist_ok=True)
                 
                 # Generate a unique filename for the audio
-                audio_filename = f"{appointment_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.webm"
+                audio_filename = f"{appointment_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.wav"
                 audio_path = AUDIO_DIR / audio_filename
                 
                 # Save the audio file
