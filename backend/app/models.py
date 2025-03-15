@@ -206,10 +206,12 @@ class AppointmentsPublic(SQLModel):
 class HospitalBase(SQLModel):
     name: str = Field(max_length=255)
     address: str = Field(max_length=255)
+    latitude: float = Field(default=0.0)
+    longitude: float = Field(default=0.0)
     phone_number: str = Field(max_length=255)
     email: EmailStr = Field(max_length=255)
     contact_person: str = Field(max_length=255)
-
+    uri: str | None = Field(default=None)
 
 # Hospital database model
 class Hospital(HospitalBase, table=True):
@@ -233,6 +235,9 @@ class HospitalUpdate(SQLModel):
     phone_number: str | None = Field(default=None)
     email: EmailStr | None = Field(default=None)
     contact_person: str | None = Field(default=None)
+    latitude: float | None = Field(default=None)
+    longitude: float | None = Field(default=None)
+    uri: str | None = Field(default=None)
 
 
 # Hospitals list response
