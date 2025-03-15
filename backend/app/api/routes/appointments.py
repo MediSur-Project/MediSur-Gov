@@ -201,8 +201,7 @@ async def websocket_endpoint(
                 print(f"Error processing audio: {str(e)}")
                 await websocket.send_json({
                     "type": "error",
-                    "text": f"Error processing audio: {str(e)}",
-                    "timestamp": datetime.now().isoformat()
+                    "text": f"Error processing audio: {str(e)}"
                 })
         elif "text" in message:
             message_from_user = message["text"]
