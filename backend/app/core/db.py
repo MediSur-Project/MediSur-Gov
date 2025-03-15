@@ -34,6 +34,8 @@ def init_hospitals(session: Session) -> None:
             "phone_number": "1234567890",
             "email": "example@example.com",
             "contact_person": "Dr. Juan Perez",
+            "latitude": 19.432607,
+            "longitude": -99.133209,
         },
         {
             "name": "Hospital Especializado",
@@ -41,6 +43,8 @@ def init_hospitals(session: Session) -> None:
             "phone_number": "0987654321",
             "email": "example@example.com",
             "contact_person": "Dr. Maria Lopez",
+            "latitude": 19.432607,
+            "longitude": -99.133209,
         },
         {
             "name": "Hospital Central",
@@ -48,6 +52,8 @@ def init_hospitals(session: Session) -> None:
             "phone_number": "1122334455",
             "email": "central@example.com",
             "contact_person": "Dr. Carmen Garcia",
+            "latitude": 19.432607,
+            "longitude": -99.133209,
         },
     ]
     for hosp in hospitals:
