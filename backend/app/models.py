@@ -211,7 +211,7 @@ class HospitalBase(SQLModel):
     phone_number: str = Field(max_length=255)
     email: EmailStr = Field(max_length=255)
     contact_person: str = Field(max_length=255)
-
+    uri: str | None = Field(default=None)
 
 # Hospital database model
 class Hospital(HospitalBase, table=True):
@@ -237,6 +237,7 @@ class HospitalUpdate(SQLModel):
     contact_person: str | None = Field(default=None)
     latitude: float | None = Field(default=None)
     longitude: float | None = Field(default=None)
+    uri: str | None = Field(default=None)
 
 
 # Hospitals list response
