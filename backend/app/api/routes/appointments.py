@@ -25,9 +25,6 @@ active_connections: Dict[str, WebSocket] = {}
 # En un entorno de producción, esto debería ser almacenado en una base de datos
 appointment_messages: Dict[str, List[Dict]] = {}
 
-# Directorio para guardar archivos de audio
-AUDIO_DIR = Path("./audio_files")
-AUDIO_DIR.mkdir(exist_ok=True)
 
 @router.post("/appointments", response_model=AppointmentResponse)
 async def create_appointment(
