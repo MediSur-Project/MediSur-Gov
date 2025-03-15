@@ -1,3 +1,5 @@
+import random
+from app.crud import get_hospitals
 import openai
 import requests
 from typing import Optional, List
@@ -10,8 +12,40 @@ from sqlmodel import select
 from sqlalchemy.orm import Session
 # Constants (Replace with real API keys)
 OPENAI_API_KEY = settings.OPENAI_API_KEY
-PERPLEXITY_API_KEY = ""
+PERPLEXITY_API_KEY = settings.PERPLEXITY_API_KEY
 client = OpenAI(api_key=OPENAI_API_KEY)
+especialidad = [
+    "Anestesiología",
+    "Cardiología",
+    "Dermatología",
+    "Cirugía General",
+    "Medicina de Emergencias",
+    "Endocrinología",
+    "Medicina Familiar",
+    "Gastroenterología",
+    "Geriatría",
+    "Hematología",
+    "Enfermedades Infecciosas",
+    "Medicina Interna",
+    "Nefrología",
+    "Neumología",
+    "Neurología",
+    "Obstetricia y Ginecología",
+    "Oncología",
+    "Oftalmología",
+    "Otorrinolaringología",
+    "Ortopedia",
+    "Patología",
+    "Pediatría",
+    "Psiquiatría",
+    "Radiología",
+    "Reumatología",
+    "Urología",
+    "Medicina Nuclear",
+    "Cirugía Plástica",
+    "Cirugía Cardiovascular",
+    "Neurocirugía"
+]
 
 # --- SCHEMA DEFINITIONS --- #
 
@@ -53,7 +87,7 @@ class DoctorSuggestions(BaseModel):
 def call_openai(prompt: str, output: type, model: str = "gpt-4o-mini") -> str:
     """Generic function to query OpenAI API."""
     response = client.beta.chat.completions.parse(model=model,
-        messages=[{"role": "system", "content": "You are a medical assistant."},
+        messages=[{"role": "system", "content": "You are a medical assistant for latin american countries. The user is a patient with a medical issue. He may speak most probably in Spanish or Portuguese. Answer in the same language. Parts of the text instructions are in English."},
                   {"role": "user", "content": prompt}],
         temperature=0.2,
         response_format=output)
@@ -81,7 +115,7 @@ def get_further_questions(context: StructuredUserInput) -> LLMQuestionResponse:
     """Asks OpenAI if additional information is needed."""
     prompt = f"""
     Given this structured patient data:
-    {context.json()}
+    {context.model_dump_json()}
     
     Determine if any crucial medical details are missing and list up to 3 additional questions to ask.
     Return as a JSON object with key 'further_questions' as a list of questions.
@@ -94,7 +128,7 @@ def triage_patient(context: StructuredUserInput) -> TriageResult:
     """Determines urgency and required specialty using OpenAI."""
     prompt = f"""
     Given this structured patient data:
-    {context.json()}
+    {context.model_dump_json()}
     
     Determine:
     - The urgency of the case (Low, Moderate, High, Emergency)
@@ -103,6 +137,8 @@ def triage_patient(context: StructuredUserInput) -> TriageResult:
     Return JSON with keys:
     - urgency (string)
     - specialty (string)
+    The options for specialty are:
+    {', '.join(especialidad)}
     """
     
     return call_openai(prompt, TriageResult)
@@ -142,6 +178,9 @@ def get_doctor_suggestions(context: StructuredUserInput) -> DoctorSuggestions:
     else:
         raise RuntimeError(f"Perplexity API error: {response.status_code}")
 
+def get_hospital():
+    hosp = get_hospitals()
+    return random.choice(hosp)
 
 # --- MAIN PROCESS FLOW --- #
 
@@ -150,6 +189,7 @@ class MedicalCaseResult(BaseModel):
     extra_questions: Optional[LLMQuestionResponse] = None
     triage: Optional[TriageResult] = None
     doctor_suggestions: Optional[DoctorSuggestions] = None
+    assigned_hospital: Optional[str] = None
 
 def process_medical_case(raw_input: RawUserInput):
     """Orchestrates the entire process flow."""
@@ -175,7 +215,8 @@ def process_medical_case(raw_input: RawUserInput):
     return MedicalCaseResult(
         raw_input=raw_input,
         triage=triage_result,
-        doctor_suggestions=doctor_suggestions
+        doctor_suggestions=doctor_suggestions,
+        assigned_hospital=get_hospital()
     )
 
 
