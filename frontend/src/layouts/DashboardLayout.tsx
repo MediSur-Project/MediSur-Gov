@@ -243,27 +243,6 @@ export default function DashboardLayout() {
               <ListItemText primary="Appointments" sx={{ opacity: open ? 1 : 0 }} />
             </ListItemButton>
           </ListItem>
-          <ListItem disablePadding sx={{ display: 'block' }}>
-            <ListItemButton
-              sx={{
-                minHeight: 48,
-                justifyContent: open ? 'initial' : 'center',
-                px: 2.5,
-              }}
-              onClick={() => handleNavigation('/dashboard/medical-records')}
-            >
-              <ListItemIcon
-                sx={{
-                  minWidth: 0,
-                  mr: open ? 3 : 'auto',
-                  justifyContent: 'center',
-                }}
-              >
-                <MedicalServicesIcon />
-              </ListItemIcon>
-              <ListItemText primary="Medical Records" sx={{ opacity: open ? 1 : 0 }} />
-            </ListItemButton>
-          </ListItem>
         </List>
         <Divider />
         <List>

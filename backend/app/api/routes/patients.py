@@ -25,7 +25,7 @@ def read_patients(
     skip: int = 0, 
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ) -> Any:
     """
     Retrieve patients.
@@ -39,7 +39,7 @@ def create_patient_api(
     *,
     patient_in: PatientCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ) -> Any:
     """
     Create new patient.
@@ -53,7 +53,7 @@ def read_patient(
     *,
     patient_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ) -> Any:
     """
     Get patient by ID.
@@ -70,7 +70,7 @@ def update_patient_api(
     patient_id: uuid.UUID,
     patient_in: PatientUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ) -> Any:
     """
     Update a patient.
@@ -89,7 +89,7 @@ def delete_patient_api(
     *,
     patient_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser),
+    # current_user: User = Depends(get_current_active_superuser),
 ) -> Any:
     """
     Delete a patient.
@@ -108,7 +108,7 @@ def read_medical_records(
     skip: int = 0, 
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ) -> Any:
     """
     Retrieve medical records for a patient.
@@ -151,7 +151,7 @@ def read_medical_record(
     patient_id: uuid.UUID,
     record_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ) -> Any:
     """
     Get medical record by ID.
@@ -173,7 +173,7 @@ def delete_medical_record_api(
     patient_id: uuid.UUID,
     record_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ) -> Any:
     """
     Delete a medical record.
@@ -240,7 +240,7 @@ def read_prescription(
     patient_id: uuid.UUID,
     prescription_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ) -> Any:
     """
     Get prescription by ID.
@@ -262,7 +262,7 @@ def delete_prescription_api(
     patient_id: uuid.UUID,
     prescription_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ) -> Any:
     """
     Delete a prescription.

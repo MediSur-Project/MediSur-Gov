@@ -83,6 +83,7 @@ function App() {
               
               {/* Patient routes */}
               <Route path="patients" element={<PatientsPage />} />
+              <Route path="patients/:patientId/medical-records" element={<MedicalRecordsPage />} />
               
               {/* Medical Records routes */}
               <Route path="medical-records" element={<MedicalRecordsPage />} />

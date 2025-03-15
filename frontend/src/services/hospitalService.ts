@@ -38,7 +38,7 @@ const MOCK_HOSPITALS: Hospital[] = [
 ];
 
 // For MVP development
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 export const getHospitals = async (skip = 0, limit = 100): Promise<PaginatedResponse<Hospital>> => {
   if (USE_MOCK_DATA) {

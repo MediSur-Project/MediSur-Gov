@@ -79,6 +79,17 @@ async def update_appointment(
     
     return appointment
 
+@router.get("/all")
+async def get_appointments(
+    db: Session = Depends(get_db),
+    skip: int = 0,
+    limit: int = 100
+):
+    """
+    Obtiene todas las citas
+    """
+    return db.query(Appointment).all()
+
 
 @router.get("/appointments/{appointment_id}", response_model=AppointmentResponse)
 async def get_appointment(
