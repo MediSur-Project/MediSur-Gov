@@ -11,8 +11,9 @@ import os
 from app.api.audio_transcriptor import process_audio
 from pathlib import Path
 from app.core.config import settings
-from app.models import Appointment, AppointmentCreate, AppointmentResponse, AppointmentStatus, AppointmentUpdate
+from app.models import Appointment, AppointmentCreate, AppointmentResponse, AppointmentStatus, AppointmentUpdate, AppointmentInfo
 from app.api.deps import get_db
+from app.api.user_answer import ask_more_questions
 router = APIRouter(prefix="/patient", tags=["patient"])
 
 # Almacenamiento en memoria para las conexiones WebSocket activas
@@ -38,7 +39,6 @@ async def create_appointment(
     # Crear la cita en la base de datos
     new_appointment = Appointment(
         patient_id=appointment_data.patient_id,
-        information="",
         additional_data={},
         request_start_time=datetime.now()
     )
@@ -97,7 +97,7 @@ async def websocket_endpoint(
     await websocket.accept()
     active_connections[appointment_id] = websocket
     
-        # Enviar mensajes históricos al cliente cuando se conecta
+    # Enviar mensajes históricos al cliente cuando se conecta
     for message in appointment_messages[appointment_id]:
         await websocket.send_json(message)
     
@@ -105,12 +105,49 @@ async def websocket_endpoint(
         message = await websocket.receive()  # Recibe el mensaje como dict
         print(message.keys())
         if "text" in message:
-              # Check if the appointment's information needs to be updated or appended
-              if appointment.status == AppointmentStatus.MISSING_DATA:
-                  appointment.information = (appointment.information or "") + "\n" + message["text"]
-              elif appointment.status == AppointmentStatus.PENDING:
-                  appointment.information = message["text"]
-              db.commit()
+            try:
+                # Get the current highest order
+                stmt = select(AppointmentInfo).where(AppointmentInfo.appointment_id == uuid_id).order_by(AppointmentInfo.order.desc())
+                last_info = db.exec(stmt).first()
+                next_order = 1 if last_info is None else last_info.order + 1
+                
+                # Create a new AppointmentInfo entry
+                new_info = AppointmentInfo(
+                    appointment_id=uuid_id,
+                    content=message["text"],
+                    order=next_order,
+                    source_type="text",
+                    created_at=datetime.now()
+                )
+                
+                db.add(new_info)
+                db.commit()
+                db.refresh(new_info)
+                
+                # Save the message in the history
+                message_data = {
+                    "type": "text",
+                    "text": message["text"],
+                    "timestamp": datetime.now().isoformat(),
+                    "info_id": str(new_info.id)
+                }
+                appointment_messages[appointment_id].append(message_data)
+                
+                # Send confirmation back to the client
+                await websocket.send_json({
+                    "type": "confirmation",
+                    "text": "Mensaje recibido",
+                    "timestamp": datetime.now().isoformat(),
+                    "info_id": str(new_info.id)
+                })
+            except Exception as e:
+                print(f"Error processing text message: {str(e)}")
+                await websocket.send_json({
+                    "type": "error",
+                    "text": f"Error processing message: {str(e)}",
+                    "timestamp": datetime.now().isoformat()
+                })
+            ask_more_questions(db, appointment_id)
         elif "bytes" in message:
             try:
                 # Get the binary data from the message
@@ -129,28 +166,39 @@ async def websocket_endpoint(
                     audio_file.write(audio_data)
                 
                 print(f"Audio saved to {audio_path}")
-                transcription = process_audio(api_key=settings.OPENAI_API_KEY, audio_path=audio_path)
+                transcription = process_audio(api_key=settings.OPENAI_API_KEY, audio_path=str(audio_path))
                 
-                # Save the transcription to the appointment
-                if appointment.status == AppointmentStatus.MISSING_DATA:
-                    appointment.information = (appointment.information or "") + "\n" + transcription
-                elif appointment.status == AppointmentStatus.PENDING:
-                    appointment.information = transcription
+                # Get the current highest order
+                stmt = select(AppointmentInfo).where(AppointmentInfo.appointment_id == uuid_id).order_by(AppointmentInfo.order.desc())
+                last_info = db.exec(stmt).first()
+                next_order = 1 if last_info is None else last_info.order + 1
+                
+                # Create a new AppointmentInfo entry
+                new_info = AppointmentInfo(
+                    appointment_id=uuid_id,
+                    content=transcription,
+                    order=next_order,
+                    source_type="audio",
+                    created_at=datetime.now()
+                )
+                
+                db.add(new_info)
                 db.commit()
+                db.refresh(new_info)
                 
                 # Send the transcription back to the client
-                await websocket.send_json({
+                message_data = {
                     "type": "transcription",
                     "text": transcription,
-                    "timestamp": datetime.now().isoformat()
-                })
+                    "timestamp": datetime.now().isoformat(),
+                    "info_id": str(new_info.id),
+                    "audio_file": audio_filename
+                }
+                
+                await websocket.send_json(message_data)
                 
                 # Save the message in the history
-                appointment_messages[appointment_id].append({
-                    "type": "transcription",
-                    "text": transcription,
-                    "timestamp": datetime.now().isoformat()
-                })
+                appointment_messages[appointment_id].append(message_data)
             except Exception as e:
                 print(f"Error processing audio: {str(e)}")
                 await websocket.send_json({
@@ -158,6 +206,7 @@ async def websocket_endpoint(
                     "text": f"Error processing audio: {str(e)}",
                     "timestamp": datetime.now().isoformat()
                 })
+            ask_more_questions(db, appointment_id)
         else:
             print(f"Incorrect message format: {message.keys()}")
 

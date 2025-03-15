@@ -130,7 +130,6 @@ class AppointmentBase(SQLModel):
     patient_id: str
     status: AppointmentStatus = Field(default=AppointmentStatus.MISSING_DATA)
     hospital_assigned: str | None = Field(default=None, max_length=255)
-    information: str | None = Field(default=None)
     additional_data: dict | None = Field(default=None, sa_column=Column(JSON))
     
     # Timestamps
@@ -144,6 +143,37 @@ class AppointmentBase(SQLModel):
 # Database model
 class Appointment(AppointmentBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    info_entries: list["AppointmentInfo"] = Relationship(back_populates="appointment", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+
+
+# Appointment Information Entry model
+class AppointmentInfo(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    appointment_id: uuid.UUID = Field(foreign_key="appointment.id", nullable=False, ondelete="CASCADE")
+    content: str = Field(...)
+    order: int = Field(default=0)
+    created_at: datetime = Field(default_factory=datetime.now)
+    source_type: str = Field(default="text")  # Can be "text", "audio", etc.
+    
+    # Relationship back to the appointment
+    appointment: Appointment = Relationship(back_populates="info_entries")
+
+
+# AppointmentInfo creation model
+class AppointmentInfoCreate(SQLModel):
+    content: str
+    order: int
+    source_type: str = "text"
+
+
+# AppointmentInfo response model
+class AppointmentInfoResponse(SQLModel):
+    id: uuid.UUID
+    appointment_id: uuid.UUID
+    content: str
+    order: int
+    created_at: datetime
+    source_type: str
 
 
 # Properties to receive on appointment creation
@@ -154,13 +184,13 @@ class AppointmentCreate(SQLModel):
 # Properties to return via API
 class AppointmentResponse(AppointmentBase):
     id: uuid.UUID
+    info_entries: list[AppointmentInfoResponse] = []
 
 
 # Properties to update appointment
 class AppointmentUpdate(SQLModel):
     status: AppointmentStatus | None = Field(default=None)
     hospital_assigned: str | None = Field(default=None)
-    information: str | None = Field(default=None)
     additional_data: dict | None = Field(default=None)
     scheduled_time: datetime | None = Field(default=None)
 

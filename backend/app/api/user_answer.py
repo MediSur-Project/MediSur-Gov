@@ -3,11 +3,14 @@ import requests
 from typing import Optional, List
 from pydantic import BaseModel, Field
 from openai import OpenAI
+from app.core.config import settings
 import os
-
+from app.models import AppointmentInfo
+from sqlmodel import select
+from sqlalchemy.orm import Session
 # Constants (Replace with real API keys)
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
+OPENAI_API_KEY = settings.OPENAI_API_KEY
+PERPLEXITY_API_KEY = ""
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 # --- SCHEMA DEFINITIONS --- #
@@ -193,3 +196,22 @@ if __name__ == "__main__":
             raw_data.chat.append(user)
             raw_data.num_previous_questions = 1 + (raw_data.num_previous_questions or 0)
     print(result)
+
+
+def ask_more_questions(db: Session, appointment_id: str):
+    """Asks OpenAI if additional information is needed."""
+    current_info = db.get(AppointmentInfo, appointment_id)
+    """Asks OpenAI if additional information is needed."""
+    # Get all information related to this appointment
+    stmt = select(AppointmentInfo).where(AppointmentInfo.appointment_id == appointment_id).order_by(AppointmentInfo.order)
+    appointment_info = db.exec(stmt).all()
+    
+    if not appointment_info:
+        return  # No information to process
+    
+    # Combine all information into a single string
+    patient_input = []
+    for info in appointment_info:
+        patient_input.append(info.content)
+    
+    print(patient_input)
