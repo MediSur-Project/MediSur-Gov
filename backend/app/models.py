@@ -242,7 +242,7 @@ class HospitalBase(SQLModel):
     phone_number: str = Field(max_length=255)
     email: EmailStr = Field(max_length=255)
     contact_person: str = Field(max_length=255)
-    uri: str | None = Field(default=None)
+    uri: str | None = Field(default=None, max_length=255)
 
 # Hospital database model
 class Hospital(HospitalBase, table=True):
