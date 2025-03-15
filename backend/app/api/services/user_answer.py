@@ -44,7 +44,7 @@ class TriageResult(BaseModel):
     """Output of the triage system, determining urgency and specialty"""
     urgency: str  # "Low", "Moderate", "High", "Emergency"
     specialty: str  # Suggested medical specialty
-    contagious: bool = False # Whether the patient is contagious
+    contagious: bool # Whether the patient is contagious
 
 
 class DoctorSuggestions(BaseModel):
