@@ -7,7 +7,6 @@ from app.api.main import api_router
 from app.core.config import settings
 from app.core.db import create_db_and_tables
 
-
 def custom_generate_unique_id(route: APIRoute) -> str:
     return f"{route.tags[0]}-{route.name}"
 
@@ -33,5 +32,4 @@ if settings.all_cors_origins:
 
 # Create database tables if they don't exist
 create_db_and_tables()
-
 app.include_router(api_router, prefix=settings.API_V1_STR)

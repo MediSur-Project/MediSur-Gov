@@ -10,10 +10,9 @@ import json
 import os
 from app.api.audio_transcriptor import process_audio
 from pathlib import Path
-
+from app.core.config import settings
 from app.models import Appointment, AppointmentCreate, AppointmentResponse, AppointmentStatus, AppointmentUpdate
 from app.api.deps import get_db
-
 router = APIRouter(prefix="/patient", tags=["patient"])
 
 # Almacenamiento en memoria para las conexiones WebSocket activas
@@ -104,7 +103,7 @@ async def websocket_endpoint(
     
     while True:
         message = await websocket.receive()  # Recibe el mensaje como dict
-        print(message)
+        print(message.keys())
         if "text" in message:
               # Check if the appointment's information needs to be updated or appended
               if appointment.status == AppointmentStatus.MISSING_DATA:
@@ -113,9 +112,54 @@ async def websocket_endpoint(
                   appointment.information = message["text"]
               db.commit()
         elif "bytes" in message:
-            process_audio(message["bytes"])
+            try:
+                # Get the binary data from the message
+                audio_data = message["bytes"]
+
+                # Create audio directory if it doesn't exist
+                AUDIO_DIR = Path("audio_files")
+                AUDIO_DIR.mkdir(exist_ok=True)
+                
+                # Generate a unique filename for the audio
+                audio_filename = f"{appointment_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.wav"
+                audio_path = AUDIO_DIR / audio_filename
+                
+                # Save the audio file
+                with open(audio_path, "wb") as audio_file:
+                    audio_file.write(audio_data)
+                
+                print(f"Audio saved to {audio_path}")
+                transcription = process_audio(api_key=settings.OPENAI_API_KEY, audio_path=audio_path)
+                
+                # Save the transcription to the appointment
+                if appointment.status == AppointmentStatus.MISSING_DATA:
+                    appointment.information = (appointment.information or "") + "\n" + transcription
+                elif appointment.status == AppointmentStatus.PENDING:
+                    appointment.information = transcription
+                db.commit()
+                
+                # Send the transcription back to the client
+                await websocket.send_json({
+                    "type": "transcription",
+                    "text": transcription,
+                    "timestamp": datetime.now().isoformat()
+                })
+                
+                # Save the message in the history
+                appointment_messages[appointment_id].append({
+                    "type": "transcription",
+                    "text": transcription,
+                    "timestamp": datetime.now().isoformat()
+                })
+            except Exception as e:
+                print(f"Error processing audio: {str(e)}")
+                await websocket.send_json({
+                    "type": "error",
+                    "text": f"Error processing audio: {str(e)}",
+                    "timestamp": datetime.now().isoformat()
+                })
         else:
-            print(f"Incorrect message")  # bytes
+            print(f"Incorrect message format: {message.keys()}")
 
 # Endpoint para acceder a los archivos de audio
 @router.get("/audio/{filename}")
