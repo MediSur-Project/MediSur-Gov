@@ -8,7 +8,8 @@ from app.api.deps import get_current_active_superuser, get_current_user, get_db
 from app.crud import (
     create_patient, delete_patient, get_patient_by_id, get_patients, update_patient,
     create_medical_record, delete_medical_record, get_medical_record_by_id, get_medical_records,
-    create_prescription, delete_prescription, get_prescription_by_id, get_prescriptions
+    create_prescription, delete_prescription, get_prescription_by_id, get_prescriptions,
+    get_patient_by_national_id
 )
 from app.models import (
     Patient, PatientCreate, PatientResponse, PatientsPublic, PatientUpdate,
@@ -47,6 +48,20 @@ def create_patient_api(
     patient = create_patient(session=db, patient_in=patient_in)
     return patient
 
+@router.get("/by-national-id/{national_id}", response_model=PatientResponse)
+def read_patient_by_national_id(
+    *,
+    national_id: str,
+    db: Session = Depends(get_db),
+    # current_user: User = Depends(get_current_user),
+) -> Any:
+    """
+    Get patient by ID.
+    """
+    patient = get_patient_by_national_id(session=db, national_id=national_id)
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    return patient
 
 @router.get("/{patient_id}", response_model=PatientResponse)
 def read_patient(
