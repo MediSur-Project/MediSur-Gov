@@ -64,10 +64,14 @@ const AppointmentsPage: React.FC = () => {
   const fetchAppointments = async () => {
     setLoading(true);
     try {
+      console.log('Fetching appointments');
       const skip = page * rowsPerPage;
       const response = await getAppointments(skip, rowsPerPage);
+      console.log('Appointments fetched:', response);
       setAppointments(response.data);
+      console.log('Appointments set:', appointments);
       setTotalCount(response.count);
+      console.log('Total count set:', totalCount);
     } catch (error) {
       console.error('Error fetching appointments:', error);
       setSnackbar({
@@ -175,7 +179,7 @@ const AppointmentsPage: React.FC = () => {
                     <CircularProgress />
                   </TableCell>
                 </TableRow>
-              ) : appointments.length === 0 ? (
+              ) : appointments == undefined || appointments.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} align="center">
                     No appointments found

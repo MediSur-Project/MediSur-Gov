@@ -7,10 +7,11 @@ from app.api.services.audio_transcriptor import process_audio, save_audio_file
 from app.api.routes.utils import register_message
 from pathlib import Path
 from app.core.config import settings
-from app.models import Appointment, AppointmentCreate, AppointmentResponse, AppointmentStatus, AppointmentUpdate, AppointmentInfo
+from app.models import Appointment, AppointmentCreate, AppointmentResponse, AppointmentStatus, AppointmentUpdate, AppointmentInfo, AppointmentsPublic
 from app.api.deps import get_db
 from app.api.services.user_answer import ask_more_questions, MedicalCaseResult
 import json
+from sqlmodel import Session, select
     
     
 router = APIRouter(prefix="/appointments", tags=["appointments"])
@@ -79,7 +80,7 @@ async def update_appointment(
     
     return appointment
 
-@router.get("/all")
+@router.get("/all", response_model=AppointmentsPublic)
 async def get_appointments(
     db: Session = Depends(get_db),
     skip: int = 0,
@@ -88,7 +89,9 @@ async def get_appointments(
     """
     Obtiene todas las citas
     """
-    return db.query(Appointment).all()
+    statement = select(Appointment).offset(skip).limit(limit)
+    appointments = db.exec(statement).all()
+    return AppointmentsPublic(data=appointments, count=len(appointments))
 
 
 @router.get("/appointments/{appointment_id}", response_model=AppointmentResponse)
