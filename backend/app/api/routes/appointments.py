@@ -236,9 +236,8 @@ def notify_hospital(db, appointment_id: str, hospital: str, urgency: str, specia
     print(f"Razón: {appointment_data['reason']}")
     print(f"URI: {hospital.uri}")
     response = requests.post(
-        f"{hospital.uri}/specialty-appointments/",
+        f"{hospital.uri}/api/v1/specialty-appointments/",
         json=appointment_data
     )
-    print(f"Response: {response.json()}")
-
+    print(f"Response: {response}")
     pass
