@@ -6,7 +6,38 @@ from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
 from sqlalchemy import Column, JSON
 
-
+especialidad = [
+    "Anestesiología",
+    "Cardiología",
+    "Dermatología",
+    "Cirugía General",
+    "Medicina de Emergencias",
+    "Endocrinología",
+    "Medicina Familiar",
+    "Gastroenterología",
+    "Geriatría",
+    "Hematología",
+    "Enfermedades Infecciosas",
+    "Medicina Interna",
+    "Nefrología",
+    "Neumología",
+    "Neurología",
+    "Obstetricia y Ginecología",
+    "Oncología",
+    "Oftalmología",
+    "Otorrinolaringología",
+    "Ortopedia",
+    "Patología",
+    "Pediatría",
+    "Psiquiatría",
+    "Radiología",
+    "Reumatología",
+    "Urología",
+    "Medicina Nuclear",
+    "Cirugía Plástica",
+    "Cirugía Cardiovascular",
+    "Neurocirugía"
+]
 # Shared properties
 class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True, max_length=255)

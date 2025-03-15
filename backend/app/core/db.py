@@ -18,6 +18,7 @@ from app.models import (
     Patient,
     MedicalRecord,
     Prescription,
+    especialidad
 )
 
 faker = Faker()
@@ -62,7 +63,7 @@ def init_hospitals(session: Session) -> None:
     ]
     for hosp in hospitals:
         hosp_in = Hospital(id=uuid.uuid4(), **hosp)
-        exists = session.exec(select(Hospital).where(Hospital.name == hosp_in.name)).first()
+        exists = session.exec(select(Hospital).where((Hospital.name == hosp_in.name) | (Hospital.id == hosp_in.id))).first()
         if not exists:
             session.add(hosp_in)
     session.commit()
@@ -103,7 +104,7 @@ def init_appointments(session: Session, count: int = 20) -> list[Appointment]:
             hospital_assigned=random.choice(available_hospitals).id,
             additional_data={"notes": faker.sentence()},
             prority=random.choice(["low", "medium", "high"]),
-            medical_specialty=random.choice(["cardiology", "neurology", "oncology"]),
+            medical_specialty=random.choice(especialidad),
             request_start_time=datetime.now() - timedelta(days=random.randint(1, 100)),
             appointment_creation_time=datetime.now() - timedelta(days=random.randint(0, 99)),
             pending_time=None,
