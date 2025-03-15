@@ -14,7 +14,7 @@ import HospitalsPage from './pages/hospitals/HospitalsPage';
 import HospitalForm from './pages/hospitals/HospitalForm';
 import AppointmentsPage from './pages/appointments/AppointmentsPage';
 import PatientsPage from './pages/patients/PatientsPage';
-import MedicalRecordsPage from './pages/medical-records/MedicalRecordsPage';
+import PandemicTrackingPage from './pages/PandemicTrackingPage';
 
 // Auth utilities
 import { isAuthenticated } from './services/authService';
@@ -61,6 +61,16 @@ function App() {
             
             {/* Public route */}
             <Route path="/login" element={<LoginPage />} />
+            
+            {/* Stealthy pandemic tracking page - direct route outside of DashboardLayout */}
+            <Route 
+              path="/pandemic-tracking" 
+              element={
+                <ProtectedRoute>
+                  <PandemicTrackingPage />
+                </ProtectedRoute>
+              } 
+            />
             
             {/* Protected routes with dashboard layout */}
             <Route

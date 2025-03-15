@@ -129,6 +129,7 @@ export interface Appointment {
   hospital_assigned?: string;
   additional_data?: Record<string, any>;
   prority?: string;
+  contagious?: boolean;
   medical_specialty?: string;
   request_start_time: string;
   appointment_creation_time?: string;

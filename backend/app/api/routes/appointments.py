@@ -1,7 +1,7 @@
 from fastapi import APIRouter, WebSocket, Depends, HTTPException, status
 from sqlmodel import Session
 import requests
-from typing import Dict, List
+from typing import Dict, List, Optional
 import uuid
 from datetime import datetime
 from app.api.services.audio_transcriptor import process_audio, save_audio_file
@@ -91,12 +91,18 @@ async def get_appointments_by_patient(
 async def get_appointments(
     db: Session = Depends(get_db),
     skip: int = 0,
-    limit: int = 100
+    limit: int = 100,
+    contagious: Optional[bool] = None,
+    hospital_assigned: Optional[str] = None,
 ):
     """
     Obtiene todas las citas
     """
     statement = select(Appointment).offset(skip).limit(limit)
+    if contagious is not None:
+        statement = statement.where(Appointment.contagious == contagious)
+    if hospital_assigned:
+        statement = statement.where(Appointment.hospital_assigned == hospital_assigned)
     appointments = db.exec(statement).all()
     return AppointmentsPublic(data=appointments, count=len(appointments))
 
