@@ -26,6 +26,8 @@ services:
       - 0.0.0.0:8000:8000
     networks:
       - default
+    volumes:
+      - ./audio_files:/app/audio_files
     depends_on:
       db:
         condition: service_healthy
