@@ -1,13 +1,8 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, status, Response
-from fastapi.responses import FileResponse
-from sqlmodel import Session, select
-from typing import Dict, List, Optional
+from fastapi import APIRouter, WebSocket, Depends, HTTPException, status
+from sqlmodel import Session
+from typing import Dict, List
 import uuid
 from datetime import datetime
-import enum
-import base64
-import json
-import os
 from app.api.audio_transcriptor import process_audio, save_audio_file
 from app.api.routes.utils import register_message
 from pathlib import Path

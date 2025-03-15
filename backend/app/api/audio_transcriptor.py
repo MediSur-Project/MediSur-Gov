@@ -1,10 +1,8 @@
 from openai import OpenAI
 from app.core.config import settings
-import base64
-import io
-import tempfile
 import os
-
+import datetime
+from pathlib import Path
 
 def save_audio_file(appointment_id: str, audio_data: bytes):
 # Create audio directory if it doesn't exist
