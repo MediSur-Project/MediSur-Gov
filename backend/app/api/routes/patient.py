@@ -10,6 +10,10 @@ from app.core.config import settings
 from app.models import Appointment, AppointmentCreate, AppointmentResponse, AppointmentStatus, AppointmentUpdate, AppointmentInfo
 from app.api.deps import get_db
 from app.api.user_answer import ask_more_questions, MedicalCaseResult
+import json
+import paho.mqtt.client as mqtt
+    
+    
 router = APIRouter(prefix="/patient", tags=["patient"])
 
 # Almacenamiento en memoria para las conexiones WebSocket activas
@@ -150,12 +154,11 @@ async def websocket_endpoint(
         else:
             print(f"Incorrect message format: {message.keys()}")
 
-        register_message(db, appointment_id, message_from_user)
+        register_message(db, appointment_id, message_from_user, "user")
         
 
         ## PREGUNTAMOS A LA LLM SI HAY QUE HACER MAS PREGUNTAS
-        result: MedicalCaseResult = ask_more_questions(db, appointment_id)
-
+        result: MedicalCaseResult = ask_more_questions(db, appointment.patient_id, appointment_id)
         if result.extra_questions is not None and len(result.extra_questions.further_questions) > 0:
             appointment.status = AppointmentStatus.MISSING_DATA
             db.commit()
@@ -164,17 +167,64 @@ async def websocket_endpoint(
                 "type": "questions",
                 "value": result.extra_questions.further_questions,
             })
+            for question in result.extra_questions.further_questions:
+                register_message(db, appointment_id, question, "assistant")
+    
+            # Close the WebSocket connection
         
         else:
             appointment.status = AppointmentStatus.PENDING
+            appointment.hospital_assigned = result.assigned_hospital
+            appointment.medical_specialty = result.triage.specialty
+            appointment.prority = result.triage.urgency
             db.commit()
             db.refresh(appointment)
             await websocket.send_json({
                 "type": "done",
-                "value": f"Tu cita ha sido creada con éxito y asignada al hospital Rosa María del Carmen. En breves asignarán una hora para usted. Revisa en el panel de citas para más información."
+                "value": f"Tu cita ha sido creada con éxito y asignada al hospital {result.assigned_hospital}. En breves asignarán una hora para usted. Revisa en el panel de citas para más información."
             })
 
             # Close the WebSocket connection
             await websocket.close()
-
+            #notify_hospital(appointment_id, result.assigned_hospital, result.triage.urgency, result.triage.specialty, result.raw_input.user_id, message_from_user)
             break
+
+def notify_hospital(appointment_id: str, hospital: str, urgency: str, specialty: str, user_id: str, message: str):
+
+    try:
+        # Create MQTT client
+        client = mqtt.Client()
+        
+        # Set credentials if configured
+        if hasattr(settings, 'MQTT_USERNAME') and hasattr(settings, 'MQTT_PASSWORD'):
+            client.username_pw_set(settings.MQTT_USERNAME, settings.MQTT_PASSWORD)
+        
+        # Connect to the broker
+        mqtt_host = getattr(settings, 'MQTT_HOST', 'localhost')
+        mqtt_port = getattr(settings, 'MQTT_PORT', 1883)
+        client.connect(mqtt_host, mqtt_port, 60)
+        
+        # Prepare the message payload
+        payload = {
+            "appointment_id": appointment_id,
+            "hospital": hospital,
+            "urgency": urgency,
+            "specialty": specialty,
+            "user_id": user_id,
+            "message": message
+        }
+        
+        # Convert payload to JSON
+        json_payload = json.dumps(payload)
+        
+        # Publish to the topic
+        topic = f"hospital/{hospital}/create_appointment"
+        client.publish(topic, json_payload)
+        
+        # Disconnect from the broker
+        client.disconnect()
+        
+        print(f"Notification sent to {topic}")
+    except Exception as e:
+        print(f"Error sending MQTT notification: {str(e)}")
+    pass
