@@ -8,7 +8,7 @@ from openai import OpenAI
 from app.core.config import settings
 import os
 from app.models import AppointmentInfo
-from sqlmodel import select
+from sqlmodel import select, func
 from sqlalchemy.orm import Session
 # Constants (Replace with real API keys)
 OPENAI_API_KEY = settings.OPENAI_API_KEY
@@ -178,9 +178,10 @@ def get_doctor_suggestions(context: StructuredUserInput) -> DoctorSuggestions:
     else:
         raise RuntimeError(f"Perplexity API error: {response.status_code}")
 
-def get_hospital():
-    hosp = get_hospitals()
-    return random.choice(hosp)
+def get_hospital(db: Session):
+    hosp = get_hospitals(session=db)
+    print(hosp[0].name)
+    return hosp[0].name
 
 # --- MAIN PROCESS FLOW --- #
 
@@ -191,7 +192,7 @@ class MedicalCaseResult(BaseModel):
     doctor_suggestions: Optional[DoctorSuggestions] = None
     assigned_hospital: Optional[str] = None
 
-def process_medical_case(raw_input: RawUserInput):
+def process_medical_case(db: Session, raw_input: RawUserInput):
     """Orchestrates the entire process flow."""
     MAX_QUESTIONS = 1
     # Step 1: Parse raw input into structured format
@@ -216,7 +217,7 @@ def process_medical_case(raw_input: RawUserInput):
         raw_input=raw_input,
         triage=triage_result,
         doctor_suggestions=doctor_suggestions,
-        assigned_hospital=get_hospital()
+        assigned_hospital=get_hospital(db)
     )
 
 
@@ -240,14 +241,16 @@ if __name__ == "__main__":
     print(result)
 
 
-def ask_more_questions(db: Session, appointment_id: str):
-    """Asks OpenAI if additional information is needed."""
-    current_info = db.get(AppointmentInfo, appointment_id)
+def ask_more_questions(db: Session, user_id: str, appointment_id: str):
     """Asks OpenAI if additional information is needed."""
     # Get all information related to this appointment
     stmt = select(AppointmentInfo).where(AppointmentInfo.appointment_id == appointment_id).order_by(AppointmentInfo.order)
     appointment_info = db.exec(stmt).all()
     
+    questions_by_agent = select(AppointmentInfo).where(AppointmentInfo.appointment_id == appointment_id, AppointmentInfo.sender == "assistant").order_by(AppointmentInfo.order)
+    questions_from_agent = db.exec(questions_by_agent).all()
+    
+    print(len(questions_from_agent))
     if not appointment_info:
         return  # No information to process
     
@@ -255,5 +258,7 @@ def ask_more_questions(db: Session, appointment_id: str):
     patient_input = []
     for info in appointment_info:
         patient_input.append(info.content)
+    print('\n'.join(patient_input))
+    raw_input = RawUserInput(user_id=user_id, chat=patient_input, num_previous_questions=len(questions_from_agent))
     
-    print(patient_input)
+    return process_medical_case(db, raw_input)

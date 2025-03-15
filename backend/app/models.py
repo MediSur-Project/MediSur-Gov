@@ -131,6 +131,8 @@ class AppointmentBase(SQLModel):
     status: AppointmentStatus = Field(default=AppointmentStatus.MISSING_DATA)
     hospital_assigned: str | None = Field(default=None, max_length=255)
     additional_data: dict | None = Field(default=None, sa_column=Column(JSON))
+    prority: str | None = Field(default=None, max_length=255)
+    medical_specialty: str | None = Field(default=None, max_length=255)
     
     # Timestamps
     request_start_time: datetime = Field(default_factory=datetime.now)
@@ -152,6 +154,7 @@ class AppointmentInfo(SQLModel, table=True):
     appointment_id: uuid.UUID = Field(foreign_key="appointment.id", nullable=False, ondelete="CASCADE")
     content: str = Field(...)
     order: int = Field(default=0)
+    sender: str = Field(default="user")
     created_at: datetime = Field(default_factory=datetime.now)
     source_type: str = Field(default="text")  # Can be "text", "audio", etc.
     
@@ -200,9 +203,10 @@ class AppointmentsPublic(SQLModel):
     data: list[AppointmentResponse]
     count: int
 
-class HospitalBase(SQLModel):
-    name: str
-    address: str
-    phone_number: str
-    email: EmailStr
-    contact_person: str
+class HospitalBase(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str = Field(max_length=255)
+    address: str = Field(max_length=255)
+    phone_number: str = Field(max_length=255)
+    email: EmailStr = Field(max_length=255)
+    contact_person: str = Field(max_length=255)

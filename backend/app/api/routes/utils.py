@@ -34,7 +34,7 @@ async def health_check() -> bool:
     return True
 
 
-def register_message(db: Session, appointment_id: str, message: str):
+def register_message(db: Session, appointment_id: str, message: str, sender: str):
         # Get the current highest order
         stmt = select(AppointmentInfo).where(AppointmentInfo.appointment_id == appointment_id).order_by(AppointmentInfo.order.desc())
         last_info = db.exec(stmt).first()
@@ -45,6 +45,7 @@ def register_message(db: Session, appointment_id: str, message: str):
             appointment_id=appointment_id,
             content=message,
             order=next_order,
+            sender=sender,
             source_type="text",
             created_at=datetime.now()
         )

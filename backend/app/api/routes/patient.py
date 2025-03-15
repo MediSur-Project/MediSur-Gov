@@ -154,11 +154,11 @@ async def websocket_endpoint(
         else:
             print(f"Incorrect message format: {message.keys()}")
 
-        register_message(db, appointment_id, message_from_user)
+        register_message(db, appointment_id, message_from_user, "user")
         
 
         ## PREGUNTAMOS A LA LLM SI HAY QUE HACER MAS PREGUNTAS
-        result: MedicalCaseResult = ask_more_questions(db, appointment_id)
+        result: MedicalCaseResult = ask_more_questions(db, appointment.patient_id, appointment_id)
         if result.extra_questions is not None and len(result.extra_questions.further_questions) > 0:
             appointment.status = AppointmentStatus.MISSING_DATA
             db.commit()
@@ -167,9 +167,16 @@ async def websocket_endpoint(
                 "type": "questions",
                 "value": result.extra_questions.further_questions,
             })
+            for question in result.extra_questions.further_questions:
+                register_message(db, appointment_id, question, "assistant")
+    
+            # Close the WebSocket connection
         
         else:
             appointment.status = AppointmentStatus.PENDING
+            appointment.hospital_assigned = result.assigned_hospital
+            appointment.medical_specialty = result.triage.specialty
+            appointment.prority = result.triage.urgency
             db.commit()
             db.refresh(appointment)
             await websocket.send_json({
