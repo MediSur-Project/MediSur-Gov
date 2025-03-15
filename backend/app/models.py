@@ -200,9 +200,201 @@ class AppointmentsPublic(SQLModel):
     data: list[AppointmentResponse]
     count: int
 
+
 class HospitalBase(SQLModel):
     name: str
     address: str
     phone_number: str
     email: EmailStr
     contact_person: str
+
+
+# Hospital database model
+class Hospital(HospitalBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+
+
+# Hospital create model
+class HospitalCreate(HospitalBase):
+    pass
+
+
+# Hospital response model
+class HospitalResponse(HospitalBase):
+    id: uuid.UUID
+
+
+# Hospital update model
+class HospitalUpdate(SQLModel):
+    name: str | None = Field(default=None)
+    address: str | None = Field(default=None)
+    phone_number: str | None = Field(default=None)
+    email: EmailStr | None = Field(default=None)
+    contact_person: str | None = Field(default=None)
+
+
+# Hospitals list response
+class HospitalsPublic(SQLModel):
+    data: list[HospitalResponse]
+    count: int
+
+
+# Gender enum for Patient
+class Gender(str, enum.Enum):
+    MALE = "M"
+    FEMALE = "F"
+    OTHER = "O"
+
+
+# Blood type enum for Patient
+class BloodType(str, enum.Enum):
+    UNKNOWN = "--"
+    A_POSITIVE = "A+"
+    A_NEGATIVE = "A-"
+    B_POSITIVE = "B+"
+    B_NEGATIVE = "B-"
+    AB_POSITIVE = "AB+"
+    AB_NEGATIVE = "AB-"
+    O_POSITIVE = "O+"
+    O_NEGATIVE = "O-"
+
+
+# Patient base model
+class PatientBase(SQLModel):
+    first_name: str
+    last_name: str
+    national_id: str = Field(unique=True, index=True)
+    date_of_birth: datetime
+    gender: Gender
+    
+    # Contact information
+    email: EmailStr | None = Field(default=None)
+    phone_number: str | None = Field(default=None)
+    address: str | None = Field(default=None)
+    city: str | None = Field(default=None)
+    
+    # Medical information
+    blood_type: BloodType = Field(default=BloodType.UNKNOWN)
+    allergies: str | None = Field(default=None)
+    medical_conditions: str | None = Field(default=None)
+    notes: str | None = Field(default=None)
+    emergency_contact_name: str | None = Field(default=None)
+    emergency_contact_phone: str | None = Field(default=None)
+    
+    # Metadata
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+
+# Patient database model
+class Patient(PatientBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    medical_records: list["MedicalRecord"] = Relationship(back_populates="patient", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    prescriptions: list["Prescription"] = Relationship(back_populates="patient", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+
+
+# Patient create model
+class PatientCreate(PatientBase):
+    pass
+
+
+# Patient update model
+class PatientUpdate(SQLModel):
+    first_name: str | None = Field(default=None)
+    last_name: str | None = Field(default=None)
+    date_of_birth: datetime | None = Field(default=None)
+    gender: Gender | None = Field(default=None)
+    email: EmailStr | None = Field(default=None)
+    phone_number: str | None = Field(default=None)
+    address: str | None = Field(default=None)
+    city: str | None = Field(default=None)
+    blood_type: BloodType | None = Field(default=None)
+    allergies: str | None = Field(default=None)
+    medical_conditions: str | None = Field(default=None)
+    notes: str | None = Field(default=None)
+    emergency_contact_name: str | None = Field(default=None)
+    emergency_contact_phone: str | None = Field(default=None)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+
+# Patient response model
+class PatientResponse(PatientBase):
+    id: uuid.UUID
+
+
+# Patients list response
+class PatientsPublic(SQLModel):
+    data: list[PatientResponse]
+    count: int
+
+
+# MedicalRecord base model
+class MedicalRecordBase(SQLModel):
+    diagnosis: str
+    notes: str | None = Field(default=None)
+    date: datetime = Field(default_factory=datetime.now)
+
+
+# MedicalRecord database model
+class MedicalRecord(MedicalRecordBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    patient_id: uuid.UUID = Field(foreign_key="patient.id", nullable=False, ondelete="CASCADE")
+    patient: Patient = Relationship(back_populates="medical_records")
+    physician_id: uuid.UUID | None = Field(foreign_key="user.id", nullable=True, ondelete="SET NULL")
+    physician: User | None = Relationship()
+
+
+# MedicalRecord create model
+class MedicalRecordCreate(MedicalRecordBase):
+    patient_id: uuid.UUID
+    physician_id: uuid.UUID | None = None
+
+
+# MedicalRecord response model
+class MedicalRecordResponse(MedicalRecordBase):
+    id: uuid.UUID
+    patient_id: uuid.UUID
+    physician_id: uuid.UUID | None = None
+
+
+# MedicalRecords list response
+class MedicalRecordsPublic(SQLModel):
+    data: list[MedicalRecordResponse]
+    count: int
+
+
+# Prescription base model
+class PrescriptionBase(SQLModel):
+    medication: str
+    dosage: str
+    instructions: str
+    duration: str
+    date: datetime = Field(default_factory=datetime.now)
+
+
+# Prescription database model
+class Prescription(PrescriptionBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    patient_id: uuid.UUID = Field(foreign_key="patient.id", nullable=False, ondelete="CASCADE")
+    patient: Patient = Relationship(back_populates="prescriptions")
+    physician_id: uuid.UUID | None = Field(foreign_key="user.id", nullable=True, ondelete="SET NULL")
+    physician: User | None = Relationship()
+
+
+# Prescription create model
+class PrescriptionCreate(PrescriptionBase):
+    patient_id: uuid.UUID
+    physician_id: uuid.UUID | None = None
+
+
+# Prescription response model
+class PrescriptionResponse(PrescriptionBase):
+    id: uuid.UUID
+    patient_id: uuid.UUID
+    physician_id: uuid.UUID | None = None
+
+
+# Prescriptions list response
+class PrescriptionsPublic(SQLModel):
+    data: list[PrescriptionResponse]
+    count: int
