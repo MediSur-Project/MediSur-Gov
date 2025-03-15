@@ -123,6 +123,33 @@ async def get_appointment(
         )
     return appointment
 
+@router.put("/appointments/{appointment_id}")
+async def set_appointment_data(
+    appointment_id: uuid.UUID,
+    appointment_data: AppointmentUpdate,
+    db: Session = Depends(get_db)
+):
+    appointment = db.get(Appointment, appointment_id)
+    if not appointment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Appointment not found"
+        )
+    if appointment_data.status is not None:
+        appointment.status = appointment_data.status
+    if appointment_data.hospital_assigned is not None:
+        appointment.hospital_assigned = appointment_data.hospital_assigned
+    if appointment_data.medical_specialty is not None:
+        appointment.medical_specialty = appointment_data.medical_specialty
+    if appointment_data.prority is not None:
+        appointment.prority = appointment_data.prority
+    if appointment_data.contagious is not None:
+        appointment.contagious = appointment_data.contagious
+    if appointment_data.scheduled_time is not None:
+        appointment.scheduled_time = appointment_data.scheduled_time
+    db.commit()
+    db.refresh(appointment)
+    return appointment
 
 @router.websocket("/ws/{appointment_id}")
 async def websocket_endpoint(

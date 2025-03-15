@@ -234,6 +234,9 @@ class AppointmentUpdate(SQLModel):
     hospital_assigned: str | None = Field(default=None)
     additional_data: dict | None = Field(default=None)
     scheduled_time: datetime | None = Field(default=None)
+    contagious: bool | None = Field(default=None)
+    medical_specialty: str | None = Field(default=None)
+    prority: str | None = Field(default=None)
 
 
 # List of appointments
