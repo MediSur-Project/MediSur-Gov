@@ -23,7 +23,6 @@ dependencies = [
     "pyjwt<3.0.0,>=2.8.0",
     "openai",
     "requests",
-    "paho-mqtt"
 ]
 
 [tool.uv]

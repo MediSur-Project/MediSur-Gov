@@ -203,8 +203,7 @@ class AppointmentsPublic(SQLModel):
     data: list[AppointmentResponse]
     count: int
 
-class HospitalBase(SQLModel, table=True):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+class HospitalBase(SQLModel):
     name: str = Field(max_length=255)
     address: str = Field(max_length=255)
     phone_number: str = Field(max_length=255)

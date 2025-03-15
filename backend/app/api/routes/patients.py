@@ -1,8 +1,8 @@
-from typing import Any
-import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session
+from typing import Any
+import uuid
 
 from app.api.deps import get_current_active_superuser, get_current_user, get_db
 from app.crud import (
