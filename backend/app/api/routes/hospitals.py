@@ -22,8 +22,7 @@ router = APIRouter(prefix="/hospitals", tags=["hospitals"])
 def read_hospitals(
     skip: int = 0, 
     limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ) -> Any:
     """
     Retrieve hospitals.
@@ -37,7 +36,7 @@ def create_hospital_api(
     *,
     hospital_in: HospitalCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser),
+    # current_user: User = Depends(get_current_active_superuser),
 ) -> Any:
     """
     Create new hospital.
@@ -51,7 +50,7 @@ def read_hospital(
     *,
     hospital_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ) -> Any:
     """
     Get hospital by ID.
@@ -68,7 +67,7 @@ def update_hospital_api(
     hospital_id: uuid.UUID,
     hospital_in: HospitalUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser),
+    # current_user: User = Depends(get_current_active_superuser),
 ) -> Any:
     """
     Update a hospital.
@@ -87,7 +86,7 @@ def delete_hospital_api(
     *,
     hospital_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser),
+    # current_user: User = Depends(get_current_active_superuser),
 ) -> Any:
     """
     Delete a hospital.
