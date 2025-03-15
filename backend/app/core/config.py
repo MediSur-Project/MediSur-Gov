@@ -48,8 +48,16 @@ class Settings(BaseSettings):
     def all_cors_origins(self) -> list[str]:
         return [str(origin).rstrip("/") for origin in self.BACKEND_CORS_ORIGINS] + [
             self.FRONTEND_HOST
-        ]
-
+        ] + ["*",
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "http://localhost:8000",
+            "http://localhost:8001",
+            "https://localhost:3000",
+            "https://localhost:5173",
+            "https://localhost:8000",
+            "https://localhost:8001",
+        ] # Allow all origins for local development
     PROJECT_NAME: str
     SENTRY_DSN: HttpUrl | None = None
     POSTGRES_SERVER: str
