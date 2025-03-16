@@ -69,14 +69,15 @@ def init_hospitals(session: Session) -> None:
             session.add(hosp_in)
     session.commit()
 
-def init_users(session: Session, count: int = 10) -> list[User]:
+def init_users(session: Session, patients: list[Patient], count: int = 10) -> list[User]:
     users = []
-    for _ in range(count):
+    for patient in patients:
         email = faker.email()
         user_in = UserCreate(
             email=email,
             password="Password123",  # In production, use a secure hash!
             full_name=faker.name(),
+            patient_id=patient.id,
         )
         user = crud.create_user(session=session, user_create=user_in)
         users.append(user)
@@ -203,16 +204,15 @@ def init_db(session: Session) -> None:
         superuser = crud.create_user(session=session, user_create=user_in)
 
     init_hospitals(session)
+    patients = init_patients(session)
 
     # Create synthetic users and their items
-    users = init_users(session)
-    init_items(session, users)
+    users = init_users(session, patients)
 
     # Create synthetic appointments with info entries
     init_appointments(session)
 
     # Create synthetic patients and their records/prescriptions
-    patients = init_patients(session)
     init_medical_records(session, patients)
     init_prescriptions(session, patients)
 
