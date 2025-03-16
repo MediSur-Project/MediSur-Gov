@@ -244,9 +244,15 @@ class AppointmentsPublic(SQLModel):
     data: list[AppointmentResponse]
     count: int
 
+class StatusHospital(str, enum.Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    UNKNOWN = "unknown"
+
 class HospitalBase(SQLModel):
     name: str = Field(max_length=255)
     address: str = Field(max_length=255)
+    status: StatusHospital = Field(default=StatusHospital.UNKNOWN)
     latitude: float = Field(default=0.0)
     longitude: float = Field(default=0.0)
     phone_number: str = Field(max_length=255)

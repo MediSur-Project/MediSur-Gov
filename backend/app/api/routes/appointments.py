@@ -241,7 +241,6 @@ async def websocket_endpoint(
             await websocket.send_json({
                 "type": "done",
                 "value": response_message,
-                "audio": audio_base64
             })
 
             # Close the WebSocket connection
