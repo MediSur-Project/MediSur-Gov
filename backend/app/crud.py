@@ -15,14 +15,15 @@ from app.models import (
 )
 
 
-def create_user(*, session: Session, user_create: UserCreate) -> User:
+def create_user(*, session: Session, user_create: UserCreate, patient_id: uuid.UUID) -> User:
     db_obj = User.model_validate(
         user_create, update={"hashed_password": get_password_hash(user_create.password)}
     )
+    db_obj.patient_id = patient_id
     session.add(db_obj)
     session.commit()
     session.refresh(db_obj)
-    return db_obj
+    return
 
 
 def update_user(*, session: Session, db_user: User, user_in: UserUpdate) -> Any:
