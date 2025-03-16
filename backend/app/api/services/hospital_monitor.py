@@ -5,6 +5,7 @@ from sqlmodel import Session, select
 from app.models import Hospital, StatusHospital
 from app.core.db import engine
 import logging
+from contextlib import asynccontextmanager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -52,11 +53,22 @@ async def update_hospital_statuses():
     except Exception as e:
         logger.error(f"Error in update_hospital_statuses: {str(e)}")
 
+@asynccontextmanager
+async def lifespan_monitor():
+    """Lifespan context manager for the monitoring service"""
+    monitor_task = asyncio.create_task(monitor_hospitals())
+    yield
+    monitor_task.cancel()
+    try:
+        await monitor_task
+    except asyncio.CancelledError:
+        pass
+
 async def monitor_hospitals():
     """Main monitoring loop"""
     while True:
         await update_hospital_statuses()
-        await asyncio.sleep(60)  # Wait for 1 minute
+        await asyncio.sleep(10)  # Wait for 10 seconds
 
 def start_monitoring():
     """Start the monitoring service"""
