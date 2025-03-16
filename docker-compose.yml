@@ -97,7 +97,7 @@ services:
     build:
       context: ./frontend
       args:
-        - VITE_API_URL=https://api.${DOMAIN?Variable not set}
+        - VITE_API_URL=http://10.39.28.186:8000/api/v1
         - NODE_ENV=production
     labels:
       - traefik.enable=true

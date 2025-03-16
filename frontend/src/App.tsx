@@ -12,6 +12,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import HospitalsPage from './pages/hospitals/HospitalsPage';
 import HospitalForm from './pages/hospitals/HospitalForm';
+import HospitalsDashboard from './pages/hospitals/HospitalsDashboard';
 import AppointmentsPage from './pages/appointments/AppointmentsPage';
 import PatientsPage from './pages/patients/PatientsPage';
 import PandemicTrackingPage from './pages/PandemicTrackingPage';
@@ -85,6 +86,7 @@ function App() {
               
               {/* Hospital routes */}
               <Route path="hospitals" element={<HospitalsPage />} />
+              <Route path="hospitals/dashboard" element={<HospitalsDashboard />} />
               <Route path="hospitals/new" element={<HospitalForm />} />
               <Route path="hospitals/edit/:id" element={<HospitalForm />} />
               

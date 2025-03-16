@@ -5,6 +5,12 @@ export interface PaginatedResponse<T> {
 }
 
 // Hospital Types
+export enum HospitalStatus {
+  ACTIVE = "active",
+  INACTIVE = "inactive",
+  UNKNOWN = "unknown"
+}
+
 export interface Hospital {
   id: string;
   name: string;
@@ -12,6 +18,9 @@ export interface Hospital {
   phone_number: string;
   email: string;
   contact_person: string;
+  latitude: number;
+  longitude: number;
+  status: HospitalStatus;
 }
 
 export interface HospitalCreate {
@@ -20,6 +29,9 @@ export interface HospitalCreate {
   phone_number: string;
   email: string;
   contact_person: string;
+  latitude: number;
+  longitude: number;
+  status: HospitalStatus;
 }
 
 export interface HospitalUpdate {
@@ -28,6 +40,9 @@ export interface HospitalUpdate {
   phone_number?: string;
   email?: string;
   contact_person?: string;
+  latitude?: number;
+  longitude?: number;
+  status?: HospitalStatus;
 }
 
 // Patient Types
