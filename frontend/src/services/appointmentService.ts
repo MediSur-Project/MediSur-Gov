@@ -21,7 +21,7 @@ export const getContagiousAppointments = async (
   } = {}
 ): Promise<PaginatedResponse<Appointment>> => {
   try {
-    const { hospitalId, startDate, endDate, skip = 0, limit = 1000 } = params;
+    const { hospitalId, startDate, endDate, skip = 0, limit = 3000 } = params;
     let url = `/appointments/all?skip=${skip}&limit=${limit}&contagious=true`;
     
     if (hospitalId) {

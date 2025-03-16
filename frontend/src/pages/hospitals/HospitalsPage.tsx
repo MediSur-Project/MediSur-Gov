@@ -150,6 +150,10 @@ const HospitalsPage: React.FC = () => {
                 <TableCell>Phone</TableCell>
                 <TableCell>Email</TableCell>
                 <TableCell>Contact Person</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Latitude</TableCell>
+                <TableCell>Longitude</TableCell>
+                <TableCell>URI</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -174,6 +178,10 @@ const HospitalsPage: React.FC = () => {
                     <TableCell>{hospital.phone_number}</TableCell>
                     <TableCell>{hospital.email}</TableCell>
                     <TableCell>{hospital.contact_person}</TableCell>
+                    <TableCell>{hospital.status}</TableCell>
+                    <TableCell>{hospital.latitude}</TableCell>
+                    <TableCell>{hospital.longitude}</TableCell>
+                    <TableCell>{hospital.uri}</TableCell>
                     <TableCell align="right">
                       <IconButton
                         aria-label="edit"

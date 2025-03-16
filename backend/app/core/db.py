@@ -1,9 +1,10 @@
 import uuid
 import random
+import math
 from datetime import datetime, timedelta
 
 from faker import Faker
-from sqlmodel import Session, create_engine, select, SQLModel
+from sqlmodel import Session, create_engine, select, SQLModel, delete
 
 from app import crud
 from app.core.config import settings
@@ -22,13 +23,30 @@ from app.models import (
     severity
 )
 
+# Set seeds for deterministic data generation
+RANDOM_SEED = 42
+random.seed(RANDOM_SEED)
 faker = Faker()
+faker.seed_instance(RANDOM_SEED)
 engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 
+def check_table_has_data(session: Session, model_class) -> bool:
+    """Check if a table has any data."""
+    return session.exec(select(model_class).limit(1)).first() is not None
+
+def clear_table(session: Session, model_class) -> None:
+    """Clear all data from a table."""
+    session.exec(delete(model_class))
+    session.commit()
+
 def init_hospitals(session: Session) -> None:
+    # Check if hospitals already exist
+    if check_table_has_data(session, Hospital):
+        return
+        
     hospitals = [
         {
             "name": "Hospital General",
@@ -64,12 +82,14 @@ def init_hospitals(session: Session) -> None:
     ]
     for hosp in hospitals:
         hosp_in = Hospital(id=uuid.uuid4(), **hosp)
-        exists = session.exec(select(Hospital).where((Hospital.name == hosp_in.name) | (Hospital.id == hosp_in.id))).first()
-        if not exists:
-            session.add(hosp_in)
+        session.add(hosp_in)
     session.commit()
 
 def init_users(session: Session, patients: list[Patient], count: int = 10) -> list[User]:
+    # Check if users already exist
+    if check_table_has_data(session, User):
+        return session.exec(select(User)).all()
+        
     users = []
     for patient in patients:
         email = faker.email()
@@ -84,6 +104,11 @@ def init_users(session: Session, patients: list[Patient], count: int = 10) -> li
     return users
 
 def init_items(session: Session, users: list[User], count_per_user: int = 3) -> None:
+    # Check if items already exist
+    if check_table_has_data(session, Item):
+        return
+        
+    items_to_add = []
     for user in users:
         for _ in range(count_per_user):
             item = Item(
@@ -92,13 +117,55 @@ def init_items(session: Session, users: list[User], count_per_user: int = 3) -> 
                 description=faker.text(max_nb_chars=100),
                 owner_id=user.id,
             )
-            session.add(item)
+            items_to_add.append(item)
+    
+    # Batch insert items
+    session.add_all(items_to_add)
     session.commit()
 
-def init_appointments(session: Session, count: int = 500) -> list[Appointment]:
+def calculate_contagious_probability(days_from_now: int, pandemic_start: int = 15, baseline: float = 0.05, peak: float = 0.9) -> float:
+    """
+    Calculate probability of being contagious based on days from current date using an exponential function.
+    
+    Args:
+        days_from_now: Number of days from current date (positive = in the past)
+        pandemic_start: When the pandemic started (days ago)
+        baseline: Base probability before pandemic starts
+        peak: Maximum probability at present day
+    
+    Returns:
+        Probability from 0.0 to 1.0
+    """
+    if days_from_now > pandemic_start:
+        return baseline
+    elif days_from_now < 0:
+        return 0.3
+    else:
+        normalized_time = 1 - (days_from_now / pandemic_start)
+        a = 5.0  # steepness factor, adjust as needed
+        probability = baseline + (peak - baseline) * (1 - math.exp(-a * normalized_time))
+        return probability
+
+def init_appointments(session: Session, count: int = 3000) -> list[Appointment]:
+    # Check if appointments already exist
+    if check_table_has_data(session, Appointment):
+        return session.exec(select(Appointment)).all()
+    
     available_hospitals = session.exec(select(Hospital)).all()    
     appointments = []
+    appointment_infos = []
+    
     for _ in range(count):
+        days_ago = random.randint(0, 60)
+        request_time = datetime.now() - timedelta(days=days_ago)
+        
+        # Creation time is close to request time
+        creation_time = request_time + timedelta(hours=random.randint(0, 24))
+        
+        # Calculate contagious probability based on days from now
+        contagious_probability = calculate_contagious_probability(days_ago)
+        is_contagious = random.random() < contagious_probability
+        
         appointment = Appointment(
             id=uuid.uuid4(),
             patient_id=faker.uuid4(),
@@ -107,16 +174,21 @@ def init_appointments(session: Session, count: int = 500) -> list[Appointment]:
             additional_data={"notes": faker.sentence()},
             prority=random.choice(severity),
             medical_specialty=random.choice(especialidad),
-            request_start_time=datetime.now() - timedelta(days=random.randint(1, 100)),
-            appointment_creation_time=datetime.now() - timedelta(days=random.randint(0, 100)),
+            request_start_time=request_time,
+            appointment_creation_time=creation_time,
             pending_time=None,
             assigned_time=None,
-            contagious=random.choice([True, False]),
+            contagious=is_contagious,
             scheduled_time=datetime.now() + timedelta(days=random.randint(1, 50)),
         )
-        session.add(appointment)
-        session.commit()  # Commit so appointment.id is available
-        # Add AppointmentInfo entries
+        appointments.append(appointment)
+    
+    # Batch insert appointments
+    session.add_all(appointments)
+    session.commit()  # Need to commit to get IDs
+    
+    # Create appointment info entries in batch
+    for appointment in appointments:
         for order in range(random.randint(1, 3)):
             info = AppointmentInfo(
                 id=uuid.uuid4(),
@@ -127,12 +199,19 @@ def init_appointments(session: Session, count: int = 500) -> list[Appointment]:
                 created_at=datetime.now(),
                 source_type="text",
             )
-            session.add(info)
-        appointments.append(appointment)
+            appointment_infos.append(info)
+    
+    # Batch insert appointment infos
+    session.add_all(appointment_infos)
     session.commit()
+    
     return appointments
 
 def init_patients(session: Session, count: int = 5) -> list[Patient]:
+    # Check if patients already exist
+    if check_table_has_data(session, Patient):
+        return session.exec(select(Patient)).all()
+        
     patients = []
     for _ in range(count):
         patient = Patient(
@@ -155,12 +234,19 @@ def init_patients(session: Session, count: int = 5) -> list[Patient]:
             created_at=datetime.now(),
             updated_at=datetime.now(),
         )
-        session.add(patient)
         patients.append(patient)
+    
+    # Batch insert patients
+    session.add_all(patients)
     session.commit()
     return patients
 
 def init_medical_records(session: Session, patients: list[Patient], count_per_patient: int = 2) -> None:
+    # Check if medical records already exist
+    if check_table_has_data(session, MedicalRecord):
+        return
+        
+    records = []
     for patient in patients:
         for _ in range(count_per_patient):
             record = MedicalRecord(
@@ -171,10 +257,18 @@ def init_medical_records(session: Session, patients: list[Patient], count_per_pa
                 patient_id=patient.id,
                 physician_id=None,  # Optionally assign a random user id
             )
-            session.add(record)
+            records.append(record)
+    
+    # Batch insert medical records
+    session.add_all(records)
     session.commit()
 
 def init_prescriptions(session: Session, patients: list[Patient], count_per_patient: int = 2) -> None:
+    # Check if prescriptions already exist
+    if check_table_has_data(session, Prescription):
+        return
+        
+    prescriptions = []
     for patient in patients:
         for _ in range(count_per_patient):
             prescription = Prescription(
@@ -187,7 +281,10 @@ def init_prescriptions(session: Session, patients: list[Patient], count_per_pati
                 patient_id=patient.id,
                 physician_id=None,
             )
-            session.add(prescription)
+            prescriptions.append(prescription)
+    
+    # Batch insert prescriptions
+    session.add_all(prescriptions)
     session.commit()
 
 def init_db(session: Session) -> None:
@@ -199,6 +296,7 @@ def init_db(session: Session) -> None:
         user_in = UserCreate(
             email=settings.FIRST_SUPERUSER,
             password=settings.FIRST_SUPERUSER_PASSWORD,
+            national_id=faker.uuid4(),
             is_superuser=True,
         )
         superuser = crud.create_user(session=session, user_create=user_in, patient=None)
@@ -210,7 +308,7 @@ def init_db(session: Session) -> None:
     users = init_users(session, patients)
 
     # Create synthetic appointments with info entries
-    init_appointments(session)
+    init_appointments(session)  # Increased count for better pandemic simulation
 
     # Create synthetic patients and their records/prescriptions
     init_medical_records(session, patients)

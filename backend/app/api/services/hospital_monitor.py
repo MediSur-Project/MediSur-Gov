@@ -66,6 +66,7 @@ async def lifespan_monitor(app):
 
 async def monitor_hospitals():
     """Main monitoring loop"""
+    await asyncio.sleep(10)  # Wait for 10 seconds to ensure the database is ready
     while True:
         await update_hospital_statuses()
         await asyncio.sleep(10)  # Wait for 10 seconds

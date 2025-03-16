@@ -1,9 +1,5 @@
 import { Appointment } from '../types';
 import { format, addDays, parseISO } from 'date-fns';
-/**
- * Calculate the growth rate using a logarithmic regression
- * Adds weighted averaging for recent days to increase sensitivity.
- */
 export const calculateGrowthRate = (
   dailyCounts: number[],
   days: number = 7
@@ -13,15 +9,26 @@ export const calculateGrowthRate = (
   const recentCounts = dailyCounts.slice(-Math.min(days, dailyCounts.length));
   if (recentCounts.length < 2) return 0;
 
-  const weightedSum = recentCounts.reduce((sum, count, index) => sum + count * (index + 1), 0);
-  const totalWeight = (recentCounts.length * (recentCounts.length + 1)) / 2;
-  const weightedAverage = weightedSum / totalWeight;
+  // Convert counts to log scale
+  const logValues = recentCounts.map((c) => Math.log(Math.max(c, 1)));
 
-  const initialValue = Math.max(recentCounts[0], 1); // Avoid div by zero
-  const finalValue = Math.max(weightedAverage, 1);
-  
-  return Math.pow(finalValue / initialValue, 1 / (recentCounts.length - 1)) - 1;
+  // Perform linear regression on log-transformed values
+  const n = logValues.length;
+  const sumX = (n * (n - 1)) / 2; // Sum of indices (0, 1, ..., n-1)
+  const sumX2 = (n * (n - 1) * (2 * n - 1)) / 6; // Sum of squared indices
+  const sumY = logValues.reduce((a, b) => a + b, 0);
+  const sumXY = logValues.reduce((sum, y, i) => sum + i * y, 0);
+
+  // Compute slope (growth rate in log space)
+  const denominator = n * sumX2 - sumX * sumX;
+  if (denominator === 0) return 0; // Avoid division by zero
+
+  const slope = (n * sumXY - sumX * sumY) / denominator;
+
+  // Convert slope to daily growth rate
+  return Math.exp(slope) - 1;
 };
+
 
 /**
  * Generate volatile predictions with randomness, periodic spikes, and momentum

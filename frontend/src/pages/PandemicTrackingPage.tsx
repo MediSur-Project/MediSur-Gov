@@ -415,6 +415,102 @@ const PandemicTrackingPage: React.FC = () => {
               </Grid>
             </Grid>
             
+            {/* Pandemic Warning Message */}
+            <Box sx={{ mb: 4, mt: 1 }}>
+              {growthRate > 0.1 ? (
+                <Alert 
+                  severity="error" 
+                  variant="filled" 
+                  sx={{ 
+                    borderRadius: 2,
+                    boxShadow: 3,
+                    animation: 'pulse 2s infinite',
+                    '@keyframes pulse': {
+                      '0%': { opacity: 0.9 },
+                      '50%': { opacity: 1 },
+                      '100%': { opacity: 0.9 },
+                    }
+                  }}
+                >
+                  <AlertTitle sx={{ fontWeight: 'bold' }}>Extreme Growth Rate Alert</AlertTitle>
+                  <Typography variant="body1">
+                    Current growth rate of {(growthRate * 100).toFixed(1)}% is <strong>extremely high</strong>. 
+                    Immediate containment measures and heightened vigilance are strongly recommended.
+                  </Typography>
+                </Alert>
+              ) : growthRate > 0.04 ? (
+                <Alert 
+                  severity="error" 
+                  sx={{ 
+                    borderRadius: 2,
+                    boxShadow: 3 
+                  }}
+                >
+                  <AlertTitle sx={{ fontWeight: 'bold' }}>High Growth Rate Warning</AlertTitle>
+                  <Typography variant="body1">
+                    Current growth rate of {(growthRate * 100).toFixed(1)}% is <strong>high</strong>. 
+                    Enhanced monitoring and preventive measures are recommended.
+                  </Typography>
+                </Alert>
+              ) : growthRate > 0.03 ? (
+                <Alert 
+                  severity="warning" 
+                  sx={{ 
+                    borderRadius: 2,
+                    boxShadow: 2 
+                  }}
+                >
+                  <AlertTitle sx={{ fontWeight: 'bold' }}>Elevated Growth Rate</AlertTitle>
+                  <Typography variant="body1">
+                    Current growth rate of {(growthRate * 100).toFixed(1)}% is <strong>above normal</strong>. 
+                    Please monitor situation closely and consider implementing precautionary measures.
+                  </Typography>
+                </Alert>
+              ) : growthRate > 0.02 ? (
+                <Alert 
+                  severity="info" 
+                  sx={{ 
+                    borderRadius: 2,
+                    boxShadow: 1 
+                  }}
+                >
+                  <AlertTitle sx={{ fontWeight: 'bold' }}>Normal Growth Rate</AlertTitle>
+                  <Typography variant="body1">
+                    Current growth rate of {(growthRate * 100).toFixed(1)}% is within <strong>normal range</strong>. 
+                    Continue regular monitoring protocols.
+                  </Typography>
+                </Alert>
+              ) : growthRate > 0 ? (
+                <Alert 
+                  severity="success" 
+                  sx={{ 
+                    borderRadius: 2,
+                    boxShadow: 1 
+                  }}
+                >
+                  <AlertTitle sx={{ fontWeight: 'bold' }}>Low Growth Rate</AlertTitle>
+                  <Typography variant="body1">
+                    Current growth rate of {(growthRate * 100).toFixed(1)}% is <strong>minimal</strong>. 
+                    Situation appears to be under control.
+                  </Typography>
+                </Alert>
+              ) : (
+                <Alert 
+                  severity="success" 
+                  sx={{ 
+                    borderRadius: 2,
+                    boxShadow: 1 
+                  }}
+                >
+                  <AlertTitle sx={{ fontWeight: 'bold' }}>Declining Trend</AlertTitle>
+                  <Typography variant="body1">
+                    Current growth rate of {(growthRate * 100).toFixed(1)}% shows a <strong>declining trend</strong>. 
+                    Containment measures appear to be effective.
+                  </Typography>
+                </Alert>
+              )}
+            </Box>
+            
             {/* Combined Chart */}
             <Paper
               elevation={2}
