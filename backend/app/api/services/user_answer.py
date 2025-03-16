@@ -88,7 +88,7 @@ def get_further_questions(context: StructuredUserInput) -> LLMQuestionResponse:
     Given this structured patient data:
     {context.model_dump_json()}
     
-    Determine if any crucial medical details are missing and list up to 3 additional questions to ask.
+    Determine if any crucial medical details are missing and list up to 1 additional questions to ask.
     Return as a JSON object with key 'further_questions' as a list of questions.
     """
     
