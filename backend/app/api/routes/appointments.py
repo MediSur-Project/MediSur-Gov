@@ -14,7 +14,7 @@ from app.api.services.user_answer import ask_more_questions, MedicalCaseResult
 from app.api.services.hospital_monitor import get_hospital
 import json
 from sqlmodel import Session, select
-from app.models import Hospital
+from app.models import Hospital, Patient
     
 router = APIRouter(prefix="/appointments", tags=["appointments"])
 
@@ -167,6 +167,7 @@ async def websocket_endpoint(
     try:
         uuid_id = uuid.UUID(appointment_id)
         appointment = db.get(Appointment, uuid_id)
+        patient = db.get(Patient, appointment.patient_id)
         if not appointment or (appointment.status != AppointmentStatus.PENDING and appointment.status != AppointmentStatus.MISSING_DATA):
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
@@ -247,7 +248,7 @@ async def websocket_endpoint(
 
             # Close the WebSocket connection
             await websocket.close()
-            notify_hospital(db, appointment_id, result.assigned_hospital, result.triage.urgency, result.triage.specialty, result.raw_input.user_id, message_from_user)
+            notify_hospital(db, appointment_id, result.assigned_hospital, result.triage.urgency, result.triage.specialty, patient.national_id, message_from_user)
             break
 
 def notify_hospital(db, appointment_id: str, hospital: Hospital, urgency: str, specialty: str, user_id: str, message: str):
