@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.models import Appointment, AppointmentCreate, AppointmentResponse, AppointmentStatus, AppointmentUpdate, AppointmentInfo, AppointmentsPublic
 from app.api.deps import get_db
 from app.api.services.user_answer import ask_more_questions, MedicalCaseResult
+from app.api.services.hospital_monitor import get_hospital
 import json
 from sqlmodel import Session, select
 from app.models import Hospital
@@ -220,23 +221,24 @@ async def websocket_endpoint(
             db.refresh(appointment)
             
             # Process each question with text-to-speech
-            questions_audio = []
+            questions = []
             for question in result.extra_questions.further_questions:
                 register_message(db, appointment_id, question, "assistant")
+                questions.append(question)
             
             await websocket.send_json({
                 "type": "questions",
-                "value": questions_audio,
+                "value": questions,
             })
         else:
             appointment.status = AppointmentStatus.PENDING
-            appointment.hospital_assigned = result.assigned_hospital
+            appointment.hospital_assigned = get_hospital(db, result.assigned_hospital)
             appointment.medical_specialty = result.triage.specialty
             appointment.prority = result.triage.urgency
             db.commit()
             db.refresh(appointment)
             
-            response_message = f"Tu cita ha sido creada con éxito y asignada al hospital {result.assigned_hospital}. En breves asignarán una hora para usted. Revisa en el panel de citas para más información."
+            response_message = f"Tu cita ha sido creada con éxito y asignada al hospital {result.assigned_hospital.name}. En breves asignarán una hora para usted. Revisa en el panel de citas para más información."
             
             await websocket.send_json({
                 "type": "done",

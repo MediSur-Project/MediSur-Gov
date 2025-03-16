@@ -10,6 +10,10 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def get_hospital(db: Session, hospital_id: str) -> Hospital:
+    """Get a hospital by ID"""
+    return db.exec(select(Hospital).where(Hospital.id == hospital_id)).first()
+
 async def check_hospital_status(session: aiohttp.ClientSession, hospital: Hospital) -> bool:
     """Check if a hospital's API is responding"""
     if not hospital.uri:
