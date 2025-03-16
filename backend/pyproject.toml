@@ -25,8 +25,9 @@ dependencies = [
     "requests",
     "faker",
     "aiohttp>=3.9.0",
-    "asyncio-mqtt==0.12.1",
-    "paho-mqtt==1.6.1"
+    "geopy==2.4.1",
+    "certifi==2024.2.2",
+    "urllib3==2.2.1"
 ]
 
 [tool.hatch.build.targets.wheel]

@@ -2,7 +2,7 @@ import random
 from app.crud import get_hospitals
 import openai
 import requests
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from pydantic import BaseModel, Field
 from openai import OpenAI
 from app.core.config import settings
@@ -11,6 +11,8 @@ from app.models import AppointmentInfo, Hospital
 from app.models import especialidad, severity
 from sqlmodel import select, func
 from sqlalchemy.orm import Session
+from app.api.services.locator import get_coordinates
+from geopy.distance import geodesic
 # Constants (Replace with real API keys)
 OPENAI_API_KEY = settings.OPENAI_API_KEY
 PERPLEXITY_API_KEY = settings.PERPLEXITY_API_KEY
@@ -151,10 +153,48 @@ def get_doctor_suggestions(context: StructuredUserInput) -> DoctorSuggestions:
     else:
         raise RuntimeError(f"Perplexity API error: {response.status_code}")
 
-def get_hospital(db: Session):
-    hosp = get_hospitals(session=db)
-    print(hosp[0].name)
-    return hosp[0]
+def get_hospital(db: Session, user_location: str) -> Optional[Hospital]:
+    """
+    Get the closest hospital to the user's location.
+    
+    Args:
+        db: Database session
+        user_location: User's address string
+        
+    Returns:
+        Hospital: The closest hospital object or None if no coordinates could be found
+    """
+    # Get user coordinates
+    user_coords = get_coordinates(user_location)
+    if not user_coords:
+        print(f"Could not get coordinates for user location: {user_location}")
+        return None
+        
+    # Get all hospitals
+    hospitals = get_hospitals(session=db)
+    if not hospitals:
+        print("No hospitals found in database")
+        return None
+        
+    # Calculate distances and find closest
+    closest_hospital = None
+    min_distance = float('inf')
+    print(f"User coords: {user_coords}")
+    for hospital in hospitals:
+        if hospital.latitude and hospital.longitude:
+            hospital_coords = (hospital.latitude, hospital.longitude)
+            distance = geodesic(user_coords, hospital_coords).kilometers
+            print(f"Distance: {distance} for {hospital.name}")
+            if distance < min_distance:
+                min_distance = distance
+                closest_hospital = hospital
+                
+    if closest_hospital:
+        print(f"Found closest hospital: {closest_hospital.name} at {min_distance:.2f} km")
+    else:
+        print("No hospital with valid coordinates found")
+        
+    return closest_hospital
 
 # --- MAIN PROCESS FLOW --- #
 
@@ -165,7 +205,7 @@ class MedicalCaseResult(BaseModel):
     doctor_suggestions: Optional[DoctorSuggestions] = None
     assigned_hospital: Optional[Hospital] = None
 
-def process_medical_case(db: Session, raw_input: RawUserInput):
+def process_medical_case(db: Session, raw_input: RawUserInput, user_location: str):
     """Orchestrates the entire process flow."""
     MAX_QUESTIONS = 1
     # Step 1: Parse raw input into structured format
@@ -190,7 +230,7 @@ def process_medical_case(db: Session, raw_input: RawUserInput):
         raw_input=raw_input,
         triage=triage_result,
         doctor_suggestions=doctor_suggestions,
-        assigned_hospital=get_hospital(db)
+        assigned_hospital=get_hospital(db, user_location)
     )
 
 
@@ -214,7 +254,7 @@ if __name__ == "__main__":
     print(result)
 
 
-def ask_more_questions(db: Session, user_id: str, appointment_id: str):
+def ask_more_questions(db: Session, user_id: str, appointment_id: str, user_location: str):
     """Asks OpenAI if additional information is needed."""
     # Get all information related to this appointment
     stmt = select(AppointmentInfo).where(AppointmentInfo.appointment_id == appointment_id).order_by(AppointmentInfo.order)
@@ -234,4 +274,4 @@ def ask_more_questions(db: Session, user_id: str, appointment_id: str):
     print('\n'.join(patient_input))
     raw_input = RawUserInput(user_id=user_id, chat=patient_input, num_previous_questions=len(questions_from_agent))
     
-    return process_medical_case(db, raw_input)
+    return process_medical_case(db, raw_input, user_location)

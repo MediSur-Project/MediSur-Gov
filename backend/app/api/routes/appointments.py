@@ -168,7 +168,9 @@ async def websocket_endpoint(
         uuid_id = uuid.UUID(appointment_id)
         appointment = db.get(Appointment, uuid_id)
         patient = db.get(Patient, appointment.patient_id)
-        if not appointment or (appointment.status != AppointmentStatus.PENDING and appointment.status != AppointmentStatus.MISSING_DATA):
+        print(patient)
+        if (not appointment or not patient) or (appointment.status != AppointmentStatus.PENDING and appointment.status != AppointmentStatus.MISSING_DATA):
+            print(f"Appointment or patient not found or status is not pending or missing data: {appointment_id}")
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
     except ValueError:
@@ -215,7 +217,7 @@ async def websocket_endpoint(
         
 
         ## PREGUNTAMOS A LA LLM SI HAY QUE HACER MAS PREGUNTAS
-        result: MedicalCaseResult = ask_more_questions(db, appointment.patient_id, appointment_id)
+        result: MedicalCaseResult = ask_more_questions(db, appointment.patient_id, appointment_id, patient.city + ", " + patient.address)
         if result.extra_questions is not None and len(result.extra_questions.further_questions) > 0:
             appointment.status = AppointmentStatus.MISSING_DATA
             db.commit()
