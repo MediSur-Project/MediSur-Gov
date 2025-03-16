@@ -250,9 +250,7 @@ async def websocket_endpoint(
             notify_hospital(db, appointment_id, result.assigned_hospital, result.triage.urgency, result.triage.specialty, result.raw_input.user_id, message_from_user)
             break
 
-def notify_hospital(db, appointment_id: str, hospital: str, urgency: str, specialty: str, user_id: str, message: str):
-    statement = select(Hospital).where(Hospital.id   == hospital)
-    hospital = db.exec(statement).first()
+def notify_hospital(db, appointment_id: str, hospital: Hospital, urgency: str, specialty: str, user_id: str, message: str):
     if hospital is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
