@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 import uuid
 from datetime import datetime
 from app.api.services.audio_transcriptor import process_audio, save_audio_file
+from app.api.services.text_to_speech import text_to_speech
 from app.api.routes.utils import register_message
 from pathlib import Path
 from app.core.config import settings
@@ -195,9 +196,9 @@ async def websocket_endpoint(
                 audio_path = save_audio_file(appointment_id, audio_data)               
                 message_from_user = process_audio(api_key=settings.OPENAI_API_KEY, audio_path=str(audio_path))
                 await websocket.send_json({
-                "type": "transcription",
-                "value": message_from_user
-            })
+                    "type": "transcription",
+                    "value": message_from_user
+                })
             except Exception as e:
                 print(f"Error processing audio: {str(e)}")
                 await websocket.send_json({
@@ -218,15 +219,22 @@ async def websocket_endpoint(
             appointment.status = AppointmentStatus.MISSING_DATA
             db.commit()
             db.refresh(appointment)
+            
+            # Process each question with text-to-speech
+            questions_audio = []
+            for question in result.extra_questions.further_questions:
+                audio_base64 = text_to_speech(question)
+                if audio_base64:
+                    questions_audio.append({
+                        "text": question,
+                        "audio": audio_base64
+                    })
+                register_message(db, appointment_id, question, "assistant")
+            
             await websocket.send_json({
                 "type": "questions",
-                "value": result.extra_questions.further_questions,
+                "value": questions_audio,
             })
-            for question in result.extra_questions.further_questions:
-                register_message(db, appointment_id, question, "assistant")
-    
-            # Close the WebSocket connection
-        
         else:
             appointment.status = AppointmentStatus.PENDING
             appointment.hospital_assigned = result.assigned_hospital
@@ -234,9 +242,14 @@ async def websocket_endpoint(
             appointment.prority = result.triage.urgency
             db.commit()
             db.refresh(appointment)
+            
+            response_message = f"Tu cita ha sido creada con éxito y asignada al hospital {result.assigned_hospital}. En breves asignarán una hora para usted. Revisa en el panel de citas para más información."
+            audio_base64 = text_to_speech(response_message)
+            
             await websocket.send_json({
                 "type": "done",
-                "value": f"Tu cita ha sido creada con éxito y asignada al hospital {result.assigned_hospital}. En breves asignarán una hora para usted. Revisa en el panel de citas para más información."
+                "value": response_message,
+                "audio": audio_base64
             })
 
             # Close the WebSocket connection

@@ -388,21 +388,20 @@ class MedicalRecord(MedicalRecordBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     patient_id: uuid.UUID = Field(foreign_key="patient.id", nullable=False, ondelete="CASCADE")
     patient: Patient = Relationship(back_populates="medical_records")
-    physician_id: uuid.UUID | None = Field(foreign_key="user.id", nullable=True, ondelete="SET NULL")
-    physician: User | None = Relationship()
+    physician_id: str | None = Field(default=None)
 
 
 # MedicalRecord create model
 class MedicalRecordCreate(MedicalRecordBase):
     patient_id: uuid.UUID
-    physician_id: uuid.UUID | None = None
+    physician_id: str | None = None
 
 
 # MedicalRecord response model
 class MedicalRecordResponse(MedicalRecordBase):
     id: uuid.UUID
     patient_id: uuid.UUID
-    physician_id: uuid.UUID | None = None
+    physician_id: str | None = None
 
 
 # MedicalRecords list response
@@ -425,21 +424,20 @@ class Prescription(PrescriptionBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     patient_id: uuid.UUID = Field(foreign_key="patient.id", nullable=False, ondelete="CASCADE")
     patient: Patient = Relationship(back_populates="prescriptions")
-    physician_id: uuid.UUID | None = Field(foreign_key="user.id", nullable=True, ondelete="SET NULL")
-    physician: User | None = Relationship()
+    physician_id: str | None = Field(default=None)
 
 
 # Prescription create model
 class PrescriptionCreate(PrescriptionBase):
     patient_id: uuid.UUID
-    physician_id: uuid.UUID | None = None
+    physician_id: str | None = None
 
 
 # Prescription response model
 class PrescriptionResponse(PrescriptionBase):
     id: uuid.UUID
     patient_id: uuid.UUID
-    physician_id: uuid.UUID | None = None
+    physician_id: str | None = None
 
 
 # Prescriptions list response
