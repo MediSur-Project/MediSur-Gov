@@ -12,10 +12,35 @@ import {
   Alert,
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { Icon, LatLngTuple } from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { getHospital, createHospital, updateHospital } from '../../services/hospitalService';
 import { Hospital, HospitalCreate, HospitalUpdate } from '../../types';
 
 type FormData = HospitalCreate | HospitalUpdate;
+
+// Default map center (Buenos Aires)
+const DEFAULT_CENTER: LatLngTuple = [-34.603722, -58.381592];
+
+const hospitalIcon = new Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// Map click handler component
+const MapClickHandler: React.FC<{ onLocationSelect: (lat: number, lng: number) => void }> = ({ onLocationSelect }) => {
+  useMapEvents({
+    click: (e) => {
+      onLocationSelect(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+};
 
 const HospitalForm: React.FC = () => {
   const navigate = useNavigate();
@@ -24,13 +49,14 @@ const HospitalForm: React.FC = () => {
   
   const [loading, setLoading] = useState(isEditMode);
   const [error, setError] = useState<string | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<LatLngTuple | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
     severity: 'success',
   });
   
-  const { control, handleSubmit, reset, formState: { errors } } = useForm<FormData>();
+  const { control, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormData>();
 
   useEffect(() => {
     if (isEditMode && id) {
@@ -49,13 +75,25 @@ const HospitalForm: React.FC = () => {
         phone_number: data.phone_number,
         email: data.email,
         contact_person: data.contact_person,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        uri: data.uri,
       });
+      if (data.latitude && data.longitude) {
+        setSelectedLocation([data.latitude, data.longitude]);
+      }
     } catch (err) {
       console.error('Error fetching hospital:', err);
       setError('Failed to load hospital data');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLocationSelect = (lat: number, lng: number) => {
+    setSelectedLocation([lat, lng]);
+    setValue('latitude', lat);
+    setValue('longitude', lng);
   };
 
   const onSubmit = async (data: FormData) => {
@@ -207,6 +245,31 @@ const HospitalForm: React.FC = () => {
               />
             </Grid>
             
+            <Grid item xs={12} md={6}>
+              <Controller
+                name="uri"
+                control={control}
+                defaultValue=""
+                rules={{
+                  pattern: {
+                    value: /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/,
+                    message: 'Invalid IP address format',
+                  }
+                }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Server IP"
+                    variant="outlined"
+                    fullWidth
+                    placeholder="192.168.1.1"
+                    error={Boolean(errors.uri)}
+                    helperText={errors.uri?.message}
+                  />
+                )}
+              />
+            </Grid>
+            
             <Grid item xs={12}>
               <Controller
                 name="contact_person"
@@ -222,6 +285,50 @@ const HospitalForm: React.FC = () => {
                     error={Boolean(errors.contact_person)}
                     helperText={errors.contact_person?.message}
                   />
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <Typography variant="subtitle1" gutterBottom>
+                Location (Click on the map to select)
+              </Typography>
+              <Paper elevation={2} sx={{ height: '400px', width: '100%', overflow: 'hidden' }}>
+                <MapContainer
+                  center={selectedLocation || DEFAULT_CENTER}
+                  zoom={13}
+                  style={{ height: '100%', width: '100%' }}
+                >
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  />
+                  <MapClickHandler onLocationSelect={handleLocationSelect} />
+                  {selectedLocation && (
+                    <Marker
+                      position={selectedLocation}
+                      icon={hospitalIcon}
+                    />
+                  )}
+                </MapContainer>
+              </Paper>
+              {/* Hidden fields for latitude and longitude */}
+              <Controller
+                name="latitude"
+                control={control}
+                defaultValue={0}
+                rules={{ required: 'Location is required' }}
+                render={({ field }) => (
+                  <input type="hidden" {...field} />
+                )}
+              />
+              <Controller
+                name="longitude"
+                control={control}
+                defaultValue={0}
+                rules={{ required: 'Location is required' }}
+                render={({ field }) => (
+                  <input type="hidden" {...field} />
                 )}
               />
             </Grid>

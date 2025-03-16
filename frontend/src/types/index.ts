@@ -21,6 +21,7 @@ export interface Hospital {
   latitude: number;
   longitude: number;
   status: HospitalStatus;
+  uri?: string;
 }
 
 export interface HospitalCreate {
@@ -32,6 +33,7 @@ export interface HospitalCreate {
   latitude: number;
   longitude: number;
   status: HospitalStatus;
+  uri?: string;
 }
 
 export interface HospitalUpdate {
@@ -43,6 +45,7 @@ export interface HospitalUpdate {
   latitude?: number;
   longitude?: number;
   status?: HospitalStatus;
+  uri?: string;
 }
 
 // Patient Types
