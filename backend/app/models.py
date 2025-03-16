@@ -56,6 +56,7 @@ class UserBase(SQLModel):
 # Properties to receive via API on creation
 class UserCreate(UserBase):
     password: str = Field(min_length=8, max_length=40)
+    national_id: str = Field(unique=True, index=True, max_length=255)
 
 
 class UserRegister(SQLModel):
