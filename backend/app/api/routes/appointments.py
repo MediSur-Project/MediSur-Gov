@@ -229,7 +229,7 @@ async def websocket_endpoint(
             
             await websocket.send_json({
                 "type": "questions",
-                "value": questions,
+                "value": ['\n'.join(questions)],
             })
         else:
             appointment.status = AppointmentStatus.PENDING
