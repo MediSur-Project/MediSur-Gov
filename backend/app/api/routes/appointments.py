@@ -69,6 +69,7 @@ async def update_appointment(
     
     if appointment_data.scheduled_time is not None:
         appointment.scheduled_time = appointment_data.scheduled_time
+        appointment.status = AppointmentStatus.SCHEDULED
     
     if appointment_data.status is not None:
         appointment.status = appointment_data.status
@@ -83,7 +84,7 @@ async def get_appointments_by_patient(
     patient_id: uuid.UUID,
     db: Session = Depends(get_db)
 ):
-    statement = select(Appointment).where(Appointment.patient_id == patient_id)
+    statement = select(Appointment).where(Appointment.patient_id == patient_id).order_by(Appointment.request_start_time.desc())
     appointments = db.exec(statement).all()
     return AppointmentsPublic(data=appointments, count=len(appointments))
 
