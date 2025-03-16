@@ -190,7 +190,7 @@ def process_medical_case(db: Session, raw_input: RawUserInput):
         raw_input=raw_input,
         triage=triage_result,
         doctor_suggestions=doctor_suggestions,
-        assigned_hospital=get_hospital(db)
+        assigned_hospital=str(get_hospital(db))
     )
 
 
