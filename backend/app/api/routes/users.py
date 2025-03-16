@@ -62,7 +62,13 @@ def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
             detail="The user with this email already exists in the system.",
         )
 
-    user = crud.create_user(session=session, user_create=user_in)
+    patient = crud.get_patient_by_national_id(session=session, national_id=user_in.national_id)
+    if patient:
+        raise HTTPException(
+            status_code=400,
+            detail="The patient with this national ID already exists in the system",
+        )
+    user = crud.create_user(session=session, user_create=user_in, patient=patient)
     if settings.emails_enabled and user_in.email:
         email_data = generate_new_account_email(
             email_to=user_in.email, username=user_in.email, password=user_in.password

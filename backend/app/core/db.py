@@ -79,7 +79,7 @@ def init_users(session: Session, patients: list[Patient], count: int = 10) -> li
             full_name=faker.name(),
             patient_id=patient.id,
         )
-        user = crud.create_user(session=session, user_create=user_in, patient_id=patient.id)
+        user = crud.create_user(session=session, user_create=user_in, patient=patient)
         users.append(user)
     return users
 
@@ -201,7 +201,7 @@ def init_db(session: Session) -> None:
             password=settings.FIRST_SUPERUSER_PASSWORD,
             is_superuser=True,
         )
-        superuser = crud.create_user(session=session, user_create=user_in)
+        superuser = crud.create_user(session=session, user_create=user_in, patient=None)
 
     init_hospitals(session)
     patients = init_patients(session)
