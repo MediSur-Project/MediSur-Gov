@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from openai import OpenAI
 from app.core.config import settings
 import os
-from app.models import AppointmentInfo
+from app.models import AppointmentInfo, Hospital
 from app.models import especialidad, severity
 from sqlmodel import select, func
 from sqlalchemy.orm import Session
@@ -154,7 +154,7 @@ def get_doctor_suggestions(context: StructuredUserInput) -> DoctorSuggestions:
 def get_hospital(db: Session):
     hosp = get_hospitals(session=db)
     print(hosp[0].name)
-    return hosp[0].id
+    return hosp[0]
 
 # --- MAIN PROCESS FLOW --- #
 
@@ -163,7 +163,7 @@ class MedicalCaseResult(BaseModel):
     extra_questions: Optional[LLMQuestionResponse] = None
     triage: Optional[TriageResult] = None
     doctor_suggestions: Optional[DoctorSuggestions] = None
-    assigned_hospital: Optional[str] = None
+    assigned_hospital: Optional[Hospital] = None
 
 def process_medical_case(db: Session, raw_input: RawUserInput):
     """Orchestrates the entire process flow."""
@@ -190,7 +190,7 @@ def process_medical_case(db: Session, raw_input: RawUserInput):
         raw_input=raw_input,
         triage=triage_result,
         doctor_suggestions=doctor_suggestions,
-        assigned_hospital=str(get_hospital(db))
+        assigned_hospital=get_hospital(db)
     )
 
 

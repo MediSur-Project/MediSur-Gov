@@ -232,7 +232,7 @@ async def websocket_endpoint(
             })
         else:
             appointment.status = AppointmentStatus.PENDING
-            appointment.hospital_assigned = get_hospital(db, result.assigned_hospital)
+            appointment.hospital_assigned = result.assigned_hospital.name
             appointment.medical_specialty = result.triage.specialty
             appointment.prority = result.triage.urgency
             db.commit()
