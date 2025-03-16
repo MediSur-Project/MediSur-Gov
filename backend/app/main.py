@@ -40,7 +40,7 @@ if settings.all_cors_origins:
     )
 
 # Create database tables if they don't exist
-full_init()
+#full_init()
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
 if __name__ == "__main__":
