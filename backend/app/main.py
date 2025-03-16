@@ -9,7 +9,6 @@ from app.api.main import api_router
 from app.core.config import settings
 from app.core.db import create_db_and_tables, full_init
 from app.api.services.hospital_monitor import lifespan_monitor
-from app.api.services.hospital_mqtt import lifespan_mqtt
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     return f"{route.tags[0]}-{route.name}"
@@ -20,7 +19,7 @@ if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with lifespan_monitor(app), lifespan_mqtt(app):
+    async with lifespan_monitor(app):
         yield
 
 app = FastAPI(
