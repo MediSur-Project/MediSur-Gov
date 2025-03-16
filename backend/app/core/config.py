@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
     OPENAI_API_KEY: str
     PERPLEXITY_API_KEY: str
+    ELEVENLABS_API_KEY: str
     BACKEND_CORS_ORIGINS: Annotated[
         list[AnyUrl] | str, BeforeValidator(parse_cors)
     ] = []
