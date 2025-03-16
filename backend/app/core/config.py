@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
     PERPLEXITY_API_KEY: str
     ELEVENLABS_API_KEY: str
+    MQTT_SERVER_URI: str = "localhost"
     BACKEND_CORS_ORIGINS: Annotated[
         list[AnyUrl] | str, BeforeValidator(parse_cors)
     ] = []
