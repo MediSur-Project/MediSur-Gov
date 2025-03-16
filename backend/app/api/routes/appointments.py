@@ -222,6 +222,12 @@ async def websocket_endpoint(
             # Process each question with text-to-speech
             questions_audio = []
             for question in result.extra_questions.further_questions:
+                audio_base64 = text_to_speech(question)
+                if audio_base64:
+                    questions_audio.append({
+                        "text": question,
+                        "audio": audio_base64
+                    })
                 register_message(db, appointment_id, question, "assistant")
             
             await websocket.send_json({
@@ -237,6 +243,7 @@ async def websocket_endpoint(
             db.refresh(appointment)
             
             response_message = f"Tu cita ha sido creada con éxito y asignada al hospital {result.assigned_hospital}. En breves asignarán una hora para usted. Revisa en el panel de citas para más información."
+            audio_base64 = text_to_speech(response_message)
             
             await websocket.send_json({
                 "type": "done",
@@ -250,7 +257,7 @@ async def websocket_endpoint(
             break
 
 def notify_hospital(db, appointment_id: str, hospital: str, urgency: str, specialty: str, user_id: str, message: str):
-    statement = select(Hospital).where(Hospital.name == hospital)
+    statement = select(Hospital).where(Hospital.id   == hospital)
     hospital = db.exec(statement).first()
     if hospital is None:
         raise HTTPException(

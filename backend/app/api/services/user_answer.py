@@ -154,7 +154,7 @@ def get_doctor_suggestions(context: StructuredUserInput) -> DoctorSuggestions:
 def get_hospital(db: Session):
     hosp = get_hospitals(session=db)
     print(hosp[0].name)
-    return hosp[0].name
+    return hosp[0].id
 
 # --- MAIN PROCESS FLOW --- #
 
