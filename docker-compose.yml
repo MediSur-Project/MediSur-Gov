@@ -20,6 +20,14 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_DB=${POSTGRES_DB?Variable not set}
+
+  mqtt:
+    image: eclipse-mosquitto:latest
+    ports:
+      - 0.0.0.0:1883:1883
+    volumes:
+      - mqtt-data:/data
+      - mqtt-config:/mosquitto/config
   backend:
     restart: always
     ports:
