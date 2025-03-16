@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session
 from typing import Any
@@ -9,7 +8,7 @@ from app.crud import (
     create_patient, delete_patient, get_patient_by_id, get_patients, update_patient,
     create_medical_record, delete_medical_record, get_medical_record_by_id, get_medical_records,
     create_prescription, delete_prescription, get_prescription_by_id, get_prescriptions,
-    get_patient_by_national_id
+    get_patient_by_national_id, associate_user_with_patient
 )
 from app.models import (
     Patient, PatientCreate, PatientResponse, PatientsPublic, PatientUpdate,
@@ -40,13 +39,17 @@ def create_patient_api(
     *,
     patient_in: PatientCreate,
     db: Session = Depends(get_db),
-    # current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> Any:
     """
     Create new patient.
+    If the request is made by a logged-in user, associate the patient with that user.
     """
-    patient = create_patient(session=db, patient_in=patient_in)
-    return patient
+    try:
+        patient = create_patient(session=db, patient_in=patient_in, user_id=current_user.id)
+        return patient
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/by-national-id/{national_id}", response_model=PatientResponse)
 def read_patient_by_national_id(
@@ -311,4 +314,24 @@ def delete_prescription_api(
         raise HTTPException(status_code=404, detail="Prescription not found")
     
     prescription = delete_prescription(session=db, prescription_id=prescription_id)
-    return prescription 
+    return prescription
+
+@router.post("/{patient_id}/associate", response_model=PatientResponse)
+def associate_patient_with_user(
+    *,
+    patient_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Any:
+    """
+    Associate an existing patient with the current user.
+    """
+    try:
+        patient = associate_user_with_patient(
+            session=db,
+            user_id=current_user.id,
+            patient_id=patient_id
+        )
+        return patient
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) 

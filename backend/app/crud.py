@@ -1,5 +1,5 @@
 import uuid
-from typing import Any
+from typing import Any, Optional
 from datetime import datetime
 
 from sqlmodel import Session, select
@@ -107,12 +107,48 @@ def get_patient_by_national_id(*, session: Session, national_id: str) -> Patient
     statement = select(Patient).where(Patient.national_id == national_id)
     return session.exec(statement).first()
 
-def create_patient(*, session: Session, patient_in: PatientCreate) -> Patient:
-    db_patient = Patient.model_validate(patient_in)
-    session.add(db_patient)
+def get_patient_by_user_id(*, session: Session, user_id: uuid.UUID) -> Optional[Patient]:
+    """Get patient associated with a user ID."""
+    statement = select(Patient).where(Patient.user_id == user_id)
+    return session.exec(statement).first()
+
+def associate_user_with_patient(*, session: Session, user_id: uuid.UUID, patient_id: uuid.UUID) -> Patient:
+    """Associate a user with a patient."""
+    # Check if patient exists
+    patient = session.get(Patient, patient_id)
+    if not patient:
+        raise ValueError("Patient not found")
+        
+    # Check if patient is already associated with a user
+    if patient.user_id:
+        raise ValueError("Patient is already associated with a user")
+        
+    # Check if user exists and doesn't already have a patient
+    existing_patient = get_patient_by_user_id(session=session, user_id=user_id)
+    if existing_patient:
+        raise ValueError("User already has an associated patient")
+        
+    # Associate user with patient
+    patient.user_id = user_id
+    session.add(patient)
     session.commit()
-    session.refresh(db_patient)
-    return db_patient
+    session.refresh(patient)
+    return patient
+
+def create_patient(*, session: Session, patient_in: PatientCreate, user_id: Optional[uuid.UUID] = None) -> Patient:
+    """Create a new patient, optionally associating it with a user."""
+    db_obj = Patient.model_validate(patient_in)
+    if user_id:
+        # Check if user already has a patient
+        existing_patient = get_patient_by_user_id(session=session, user_id=user_id)
+        if existing_patient:
+            raise ValueError("User already has an associated patient")
+        db_obj.user_id = user_id
+    
+    session.add(db_obj)
+    session.commit()
+    session.refresh(db_obj)
+    return db_obj
 
 def update_patient(*, session: Session, db_patient: Patient, patient_in: PatientUpdate) -> Patient:
     patient_data = patient_in.model_dump(exclude_unset=True)

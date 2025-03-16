@@ -1,6 +1,7 @@
 import uuid
 import enum
 from datetime import datetime
+from typing import Optional
 
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
@@ -84,6 +85,7 @@ class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
+    patient: Optional["Patient"] = Relationship(back_populates="user", sa_relationship_kwargs={"uselist": False})
 
 
 # Properties to return via API, id is always required
@@ -345,6 +347,8 @@ class Patient(PatientBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     medical_records: list["MedicalRecord"] = Relationship(back_populates="patient", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
     prescriptions: list["Prescription"] = Relationship(back_populates="patient", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    user_id: Optional[uuid.UUID] = Field(default=None, foreign_key="user.id", unique=True)
+    user: Optional["User"] = Relationship(back_populates="patient")
 
 
 # Patient create model

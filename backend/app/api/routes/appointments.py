@@ -14,7 +14,7 @@ from app.api.services.user_answer import ask_more_questions, MedicalCaseResult
 from app.api.services.hospital_monitor import get_hospital
 import json
 from sqlmodel import Session, select
-from app.models import Hospital, Patient
+from app.models import Hospital, Patient, User
     
 router = APIRouter(prefix="/appointments", tags=["appointments"])
 
@@ -167,7 +167,8 @@ async def websocket_endpoint(
     try:
         uuid_id = uuid.UUID(appointment_id)
         appointment = db.get(Appointment, uuid_id)
-        patient = db.get(Patient, appointment.patient_id)
+        user = db.get(User, appointment.patient_id)
+        patient = db.get(Patient, user.patient_id)
         print(patient)
         if (not appointment or not patient) or (appointment.status != AppointmentStatus.PENDING and appointment.status != AppointmentStatus.MISSING_DATA):
             print(f"Appointment or patient not found or status is not pending or missing data: {appointment_id}")
