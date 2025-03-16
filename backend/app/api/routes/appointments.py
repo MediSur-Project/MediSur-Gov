@@ -5,7 +5,6 @@ from typing import Dict, List, Optional
 import uuid
 from datetime import datetime
 from app.api.services.audio_transcriptor import process_audio, save_audio_file
-from app.api.services.text_to_speech import text_to_speech
 from app.api.routes.utils import register_message
 from pathlib import Path
 from app.core.config import settings
@@ -223,12 +222,6 @@ async def websocket_endpoint(
             # Process each question with text-to-speech
             questions_audio = []
             for question in result.extra_questions.further_questions:
-                audio_base64 = text_to_speech(question)
-                if audio_base64:
-                    questions_audio.append({
-                        "text": question,
-                        "audio": audio_base64
-                    })
                 register_message(db, appointment_id, question, "assistant")
             
             await websocket.send_json({
@@ -244,7 +237,6 @@ async def websocket_endpoint(
             db.refresh(appointment)
             
             response_message = f"Tu cita ha sido creada con éxito y asignada al hospital {result.assigned_hospital}. En breves asignarán una hora para usted. Revisa en el panel de citas para más información."
-            audio_base64 = text_to_speech(response_message)
             
             await websocket.send_json({
                 "type": "done",
