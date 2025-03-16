@@ -28,8 +28,7 @@ def process_audio(api_key: str, audio_path: str):
                 model="whisper-1",
                 file=audio_file
             )
-        print(response.text)
-        return response.text
+            return response.text
     finally:
         # Clean up the temporary file
         if os.path.exists(audio_path):
