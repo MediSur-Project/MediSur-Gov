@@ -168,7 +168,6 @@ async def websocket_endpoint(
         uuid_id = uuid.UUID(appointment_id)
         appointment = db.get(Appointment, uuid_id)
         user = db.get(User, appointment.patient_id)
-        print(user.patient)
         patient = user.patient
         if (not appointment or not patient) or (appointment.status != AppointmentStatus.PENDING and appointment.status != AppointmentStatus.MISSING_DATA):
             print(f"Appointment or patient not found or status is not pending or missing data: {appointment_id}")

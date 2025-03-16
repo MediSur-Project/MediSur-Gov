@@ -8,7 +8,6 @@ def save_audio_file(appointment_id: str, audio_data: bytes):
 # Create audio directory if it doesn't exist
     AUDIO_DIR = Path("audio_files")
 
-    print(AUDIO_DIR)
     # Generate a unique filename for the audio
     audio_filename = f"{appointment_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.wav"
     audio_path = AUDIO_DIR / audio_filename
@@ -28,6 +27,7 @@ def process_audio(api_key: str, audio_path: str):
                 model="whisper-1",
                 file=audio_file
             )
+            print(response.text)
             return response.text
     finally:
         # Clean up the temporary file
