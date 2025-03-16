@@ -54,7 +54,7 @@ async def update_hospital_statuses():
         logger.error(f"Error in update_hospital_statuses: {str(e)}")
 
 @asynccontextmanager
-async def lifespan_monitor():
+async def lifespan_monitor(app):
     """Lifespan context manager for the monitoring service"""
     monitor_task = asyncio.create_task(monitor_hospitals())
     yield
